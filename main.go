@@ -16,9 +16,9 @@ const INPUT_BAIAS = .5
 // Create random 2D vector. Implement pre-init synapses
 func random() (out [][]float64) {
 	rand.Seed(time.Now().UTC().UnixNano())
-	for i := 0; i < OUTPUT; i++ {
+	for i := 0; i < HIDDEN; i++ {
 		out = append(out, []float64{})
-		for j := 0; j < HIDDEN; j++ {
+		for j := 0; j < OUTPUT; j++ {
 			out[i] = append(out[i], rand.Float64()-0.5) // Float64 returns, as a float64, a pseudo-random number in [0.0,1.0).
 		}
 	}
@@ -36,12 +36,23 @@ func NguyenWiderow() [][]float64 {
 			norm += j * j
 		}
 		norm = math.Sqrt(norm)
-
 		for j, k := range i {
 			i[j] = (k * beta) / norm
 		}
 	}
 	return randSynapses
+}
+
+func addBiases(synapses [][]float64) [][]float64 {
+	synapses = append(synapses, make([]float64, OUTPUT))
+	for i := 0; i < OUTPUT; i++ {
+		synapses[HIDDEN][i] = 1.
+	}
+
+	for _, i := range synapses {
+		fmt.Println(i)
+	}
+	return synapses
 }
 
 // For example Sygmoid
@@ -50,20 +61,21 @@ func sygmoid(n float64) float64 {
 }
 
 func forward(set []float64, synapses [][]float64) (output []float64) {
-	//synapses := NguyenWiderow() // TODO: use existing model or random weights dependent of is it learning or recognition
-	var sum, oSum float64
+	var iSum, oSum float64
 
 	for _, i := range set {
-		sum += i
+		iSum += i
 	}
-	sum = sygmoid(sum + INPUT_BAIAS)
+	iSum = sygmoid(iSum)
 
-	for _, i := range synapses {
+	li := len(synapses[0])
+	lm := len(synapses)
+	for i := 0; i < li; i++ {
 		oSum = 0
-		for _, j := range i {
-			oSum += j * sum
+		for j := 0; j < lm; i++ {
+			oSum += synapses[j][i] * iSum
 		}
-		output = append(output, sygmoid(oSum+HIDDEN_BIAS))
+		output = append(output, sygmoid(oSum))
 	}
 	return
 }
@@ -80,8 +92,9 @@ func quadratic_derivative(a, e float64) float64 {
 	return a - e
 }
 
+// n: weighted sum of j-1 layer activations. A.k.a. j layer k neuron input
 func sygmoid_derivative(n float64) float64 {
-	return sygmoid(n)(1 - sygmoid(n))
+	return sygmoid(n) * (1 - sygmoid(n))
 }
 
 // TODO: add biases per layer
@@ -95,10 +108,10 @@ func backward(out, labels []float64, inp, synapses [][]float64) [][]float64 {
 		cost = quadratic_derivative(v, labels[i]) * sygmoid_derivative(sumInp)
 		for k := range synapses {
 			// Not to keep weights corrections id possible only for stochastic descent
-			synapse[i][k] += cost * inp[i][j]
+			synapses[i][k] += cost * inp[i][k]
 		}
 	}
-	return synapse
+	return synapses
 }
 
 func restore(id int) [][]float64 {
@@ -106,5 +119,7 @@ func restore(id int) [][]float64 {
 }
 
 func main() {
-	fmt.Println("vim-go")
+	synapses := NguyenWiderow()
+	synapses = addBiases(synapses)
+	fmt.Println(forward(set, synapses))
 }

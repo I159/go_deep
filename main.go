@@ -2,10 +2,47 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
+	"os"
 	"time"
 )
+
+const TEST_SET_SIZE = 10000
+
+func getTrainigImages() (set [][]float64, err error) {
+	imagesFile, err := os.Open("t10k-images-idx3-ubyte")
+	if err != nil {
+		return
+	}
+
+	var offset int
+	cursor := 512
+
+	image := make([]byte, INPUT)
+	f64image := make([]float64, INPUT)
+	lim := TEST_SET_SIZE * INPUT
+	for cursor < lim {
+		offset, err = imagesFile.ReadAt(image, int64(cursor))
+		if err != nil {
+			if err == io.EOF {
+				err = nil
+			}
+			return
+		}
+		cursor += offset
+		for i, v := range image {
+			f64image[i] = float64(v)
+		}
+		set = append(set, f64image)
+	}
+	return
+}
+
+//func getTrainingLabels() [][]float64 {
+
+//}
 
 const SCALING_BASE = 0.7
 const INPUT = 784
@@ -48,10 +85,6 @@ func addBiases(synapses [][]float64) [][]float64 {
 	for i := 0; i < OUTPUT; i++ {
 		synapses[HIDDEN][i] = 1.
 	}
-
-	for _, i := range synapses {
-		fmt.Println(i)
-	}
 	return synapses
 }
 
@@ -68,11 +101,11 @@ func forward(set []float64, synapses [][]float64) (output []float64) {
 	}
 	iSum = sygmoid(iSum)
 
-	li := len(synapses[0])
+	li := len(synapses[0]) - 1
 	lm := len(synapses)
 	for i := 0; i < li; i++ {
 		oSum = 0
-		for j := 0; j < lm; i++ {
+		for j := 0; j < lm; j++ {
 			oSum += synapses[j][i] * iSum
 		}
 		output = append(output, sygmoid(oSum))
@@ -121,5 +154,9 @@ func restore(id int) [][]float64 {
 func main() {
 	synapses := NguyenWiderow()
 	synapses = addBiases(synapses)
-	fmt.Println(forward(set, synapses))
+	set, err := getTrainigImages()
+	if err != nil {
+		return
+	}
+	fmt.Println(forward(set[0], synapses))
 }

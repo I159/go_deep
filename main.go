@@ -80,6 +80,7 @@ func NguyenWiderow() [][]float64 {
 	return randSynapses
 }
 
+// TODO: find out how use biases in forward propagation
 func addBiases(synapses [][]float64) [][]float64 {
 	synapses = append(synapses, make([]float64, OUTPUT))
 	for i := 0; i < OUTPUT; i++ {
@@ -96,18 +97,24 @@ func sygmoid(n float64) float64 {
 func forward(set []float64, synapses [][]float64) (output []float64) {
 	var iSum, oSum float64
 
+	// Each neuron of a first hidden layer receives all signals from input layer
+	// and sums it. Input layer doesn't change input signal
 	for _, i := range set {
-		iSum += i
+		iSum += i * .00001 // Lowering of signal values to prevent overflow 
 	}
-	iSum = sygmoid(iSum)
+	iSum = sygmoid(iSum) // Activation of a signal at hidden layer
 
 	li := len(synapses[0]) - 1
 	lm := len(synapses)
 	for i := 0; i < li; i++ {
 		oSum = 0
 		for j := 0; j < lm; j++ {
-			oSum += synapses[j][i] * iSum
+			// Multiply summed input signal and multiply it to synapses
+			// Output layer neurons sums weighted signal 
+			// TODO: save hidden layer output
+			oSum += synapses[j][i] * iSum // Output signal of a hidden layer
 		}
+		// Output layer applies activation function and returns per neuron single prediction value 
 		output = append(output, sygmoid(oSum))
 	}
 	return
@@ -131,7 +138,11 @@ func sygmoid_derivative(n float64) float64 {
 }
 
 // TODO: add biases per layer
-
+// (ak - tk)g`(zk)aj
+// ak - output of an output layer k
+// tk - correct answer for an output neuron 
+// zk - output layer k input (sum of hidden layer outputs)
+// aj - output of a hidden layer neuron
 func backward(out, labels []float64, inp, synapses [][]float64) [][]float64 {
 	var cost, sumInp float64
 	for i, v := range out {
@@ -140,7 +151,6 @@ func backward(out, labels []float64, inp, synapses [][]float64) [][]float64 {
 		}
 		cost = quadratic_derivative(v, labels[i]) * sygmoid_derivative(sumInp)
 		for k := range synapses {
-			// Not to keep weights corrections id possible only for stochastic descent
 			synapses[i][k] += cost * inp[i][k]
 		}
 	}

@@ -100,7 +100,7 @@ func forward(set []float64, synapses [][]float64) (output []float64) {
 	// Each neuron of a first hidden layer receives all signals from input layer
 	// and sums it. Input layer doesn't change input signal
 	for _, i := range set {
-		iSum += i * .00001 // Lowering of signal values to prevent overflow 
+		iSum += i * .00001 // Lowering of signal values to prevent overflow
 	}
 	iSum = sygmoid(iSum) // Activation of a signal at hidden layer
 
@@ -110,13 +110,13 @@ func forward(set []float64, synapses [][]float64) (output []float64) {
 		oSum = 0
 		for j := 0; j < lm; j++ {
 			// Multiply summed input signal and multiply it to synapses
-			// Output layer neurons sums weighted signal 
+			// Output layer neurons sums weighted signal
 			// TODO: save hidden layer output
 			oSum += synapses[j][i] * iSum // Output signal of a hidden layer
 		}
 		// Apply a bias
 		oSum += synapses[lm+1][i]
-		// Output layer applies activation function and returns per neuron single prediction value 
+		// Output layer applies activation function and returns per neuron single prediction value
 		output = append(output, sygmoid(oSum))
 	}
 	return
@@ -142,7 +142,7 @@ func sygmoid_derivative(n float64) float64 {
 // TODO: add biases per layer
 // (ak - tk)g`(zk)aj
 // ak - output of an output layer k
-// tk - correct answer for an output neuron 
+// tk - correct answer for an output neuron
 // zk - output layer k input (sum of hidden layer outputs)
 // aj - output of a hidden layer neuron
 func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float64 {
@@ -150,13 +150,17 @@ func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float6
 	for i, ak := range out {
 		zk = 0
 		for _, aj := range hiddenOut[i] {
-			// Count output layer
+			// Count output layer input value
 			zk += aj
 		}
+		// Count an error derivative
 		cost = quadratic_derivative(ak, labels[i]) * sygmoid_derivative(zk)
 		for k := range synapses {
-			synapses[i][k] += cost * hiddenOut[i][k]
+			// Multiply an error by output of an appropriate hidden neuron
+			// Correct a synapse immediately (Stochastic gradient)
+			synapses[k][i] += cost * hiddenOut[k][i]
 		}
+		// TODO: correct biases
 	}
 	return synapses
 }
@@ -172,5 +176,6 @@ func main() {
 	if err != nil {
 		return
 	}
-	fmt.Println(forward(set[0], synapses))
+	prediction := forward(set[0], synapses)
+	fmt.Println(backward(prediction, labels, hiddenOut, synapses))
 }

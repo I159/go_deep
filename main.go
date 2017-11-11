@@ -105,7 +105,7 @@ func forward(set []float64, synapses [][]float64) (output []float64) {
 	iSum = sygmoid(iSum) // Activation of a signal at hidden layer
 
 	li := len(synapses[0]) - 1
-	lm := len(synapses)
+	lm := len(synapses) - 2
 	for i := 0; i < li; i++ {
 		oSum = 0
 		for j := 0; j < lm; j++ {
@@ -114,6 +114,8 @@ func forward(set []float64, synapses [][]float64) (output []float64) {
 			// TODO: save hidden layer output
 			oSum += synapses[j][i] * iSum // Output signal of a hidden layer
 		}
+		// Apply a bias
+		oSum += synapses[lm+1][i]
 		// Output layer applies activation function and returns per neuron single prediction value 
 		output = append(output, sygmoid(oSum))
 	}
@@ -143,15 +145,17 @@ func sygmoid_derivative(n float64) float64 {
 // tk - correct answer for an output neuron 
 // zk - output layer k input (sum of hidden layer outputs)
 // aj - output of a hidden layer neuron
-func backward(out, labels []float64, inp, synapses [][]float64) [][]float64 {
-	var cost, sumInp float64
-	for i, v := range out {
-		for _, j := range inp[i] {
-			sumInp += j
+func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float64 {
+	var cost, zk float64
+	for i, ak := range out {
+		zk = 0
+		for _, aj := range hiddenOut[i] {
+			// Count output layer
+			zk += aj
 		}
-		cost = quadratic_derivative(v, labels[i]) * sygmoid_derivative(sumInp)
+		cost = quadratic_derivative(ak, labels[i]) * sygmoid_derivative(zk)
 		for k := range synapses {
-			synapses[i][k] += cost * inp[i][k]
+			synapses[i][k] += cost * hiddenOut[i][k]
 		}
 	}
 	return synapses

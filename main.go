@@ -145,30 +145,26 @@ func forward(set []float64, synapses [][]float64) (output []float64, hiddenOut [
 	for _, i := range set {
 		iSum += i * .00001 // Lowering of signal values to prevent overflow
 	}
+
 	iSum = sygmoid(iSum) // Activation of signal at a hidden layer
-
-	li := len(synapses[0]) // Count of synapses between hidden and output layer
 	lm := len(synapses)    // Count of neurons of a hidden layer apart from bias neuron
-	hiddenOut = make([][]float64, lm)
 
-	// TODO: iterate through simple index range
-	for i := 0; i < li-1; i++ {
+	for i := range synapses[0]{
+		var outLine []float64
 		oSum = 0
-		for j := 0; j < lm-2; j++ {
-			// Output layer neurons sums weighted signal
-			// TODO: save hidden layer output
-			if hiddenOut[j] == nil {
-				hiddenOut[j] = make([]float64, li)
-			}
-			hiddenOut[j][i] = synapses[j][i] * iSum
-			oSum += hiddenOut[j][i] // Output signal of a hidden layer
+
+		for j := range synapses {
+			jIOut := synapses[j][i] * iSum
+			oSum += jIOut
+			outLine = append(outLine, jIOut)
 		}
+
+		hiddenOut = append(hiddenOut, outLine)
 		// Apply a bias
 		oSum += synapses[lm-1][i] // Bias doesn't use weights. Bias is a weight without a signal.
-		// FIXME: add baises to hidden output
-		// Output layer applies activation function and returns per neuron single prediction value
 		output = append(output, sygmoid(oSum))
 	}
+
 	return
 }
 
@@ -206,11 +202,11 @@ func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float6
 		// Count an error derivative using delta rule
 		// FIXME: labels[i] is wrong value. Count hot encoding instead
 		cost = quadratic_derivative(ak, labels[i]) * sygmoid_derivative(zk)
+		fmt.Println(labels[i], cost)
 		for k := range synapses {
 			// Multiply an error by output of an appropriate hidden neuron
 			// Correct a synapse immediately (Stochastic gradient)
-			fmt.Println(len(hiddenOut[k]), i, k)
-			synapses[k][i] += cost * hiddenOut[k][i]
+			synapses[k][i] += cost  * hiddenOut[i][k]
 		}
 		// TODO: correct biases
 	}
@@ -235,5 +231,5 @@ func main() {
 	// NOTE: forward and backward propagation implemented for a single data set item.
 	// Also backward propagation supports only stochastic gradient and can't use batches of data items to learn
 	prediction, hiddenOut := forward(set[0], synapses)
-	fmt.Println(backward(prediction, labels[0], hiddenOut, synapses))
+	backward(prediction, labels[0], hiddenOut, synapses)
 }

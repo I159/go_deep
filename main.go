@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"math/rand"
 	"os"
@@ -42,38 +42,47 @@ func getTrainigImages() (set [][]float64, err error) {
 	return
 }
 
-func getTrainingLabels() (labels []float64, err error) {
+func getTrainingLabels() (labels [][]float64, err error) {
 	fp, err := os.Open("t10k-labels-idx1-ubyte")
 	if err != nil {
 		return
 	}
 	defer fp.Close()
-	labelsBuffer := bufio.NewReader(fp)
 
-	magic, err := binary.ReadUvarint(labelsBuffer)
+	var magic int32
+	err = binary.Read(fp, binary.BigEndian, &magic)
 	if err != nil {
 		return
 	}
+
 	if magic != 2049 {
-		err = fmt.Errorf("Wrong magic number %d", magic)
+		err = fmt.Errorf("Wrong magic number: %d. Expects: %d.", magic, 2049)
 		return
 	}
-	fp.Seek(32, 1)
+	fp.Seek(4, 0)
 
-	c, err := binary.ReadUvarint(labelsBuffer)
+	var count int32
+	err = binary.Read(fp, binary.BigEndian, &count)
 	if err != nil {
 		return
 	}
-	count := int(c)
-	fp.Seek(32, 1)
+	fp.Seek(4, 1)
 
-	var labe uint64
-	for i := 0; i < count*8; i += 8 {
-		labe, err = binary.ReadUvarint(labelsBuffer)
-		if err != nil {
-			return
+	for err == nil {
+		var labe uint8
+		err = binary.Read(fp, binary.BigEndian, &labe)
+		var hotEncoding []float64
+		for i := 0; i < OUTPUT; i++ {
+			if int(labe) == i {
+				hotEncoding = append(hotEncoding, 1)
+			} else {
+				hotEncoding = append(hotEncoding, 0)
+			}
 		}
-		labels = append(labels, float64(labe))
+		labels = append(labels, hotEncoding)
+	}
+	if err == io.EOF {
+		err = nil
 	}
 	return
 }
@@ -128,7 +137,7 @@ func sygmoid(n float64) float64 {
 	return 1 / (1 + math.Exp(n))
 }
 
-func forward(set []float64, synapses [][]float64) (output []float64) {
+func forward(set []float64, synapses [][]float64) (output []float64, hiddenOut [][]float64) {
 	var iSum, oSum float64
 
 	// Each neuron of a first hidden layer receives all signals from input layer
@@ -138,17 +147,25 @@ func forward(set []float64, synapses [][]float64) (output []float64) {
 	}
 	iSum = sygmoid(iSum) // Activation of signal at a hidden layer
 
-	li := len(synapses[0]) - 1 // Count of synapses between hidden and output layer
-	lm := len(synapses) - 2    // Count of neurons of a hidden layer apart from bias neuron
-	for i := 0; i < li; i++ {
+	li := len(synapses[0]) // Count of synapses between hidden and output layer
+	lm := len(synapses)    // Count of neurons of a hidden layer apart from bias neuron
+	hiddenOut = make([][]float64, lm)
+
+	// TODO: iterate through simple index range
+	for i := 0; i < li-1; i++ {
 		oSum = 0
-		for j := 0; j < lm; j++ {
+		for j := 0; j < lm-2; j++ {
 			// Output layer neurons sums weighted signal
 			// TODO: save hidden layer output
-			oSum += synapses[j][i] * iSum // Output signal of a hidden layer
+			if hiddenOut[j] == nil {
+				hiddenOut[j] = make([]float64, li)
+			}
+			hiddenOut[j][i] = synapses[j][i] * iSum
+			oSum += hiddenOut[j][i] // Output signal of a hidden layer
 		}
 		// Apply a bias
-		oSum += synapses[lm+1][i] // Bias doesn't use weights. Bias is a weight without a signal.
+		oSum += synapses[lm-1][i] // Bias doesn't use weights. Bias is a weight without a signal.
+		// FIXME: add baises to hidden output
 		// Output layer applies activation function and returns per neuron single prediction value
 		output = append(output, sygmoid(oSum))
 	}
@@ -183,14 +200,16 @@ func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float6
 	for i, ak := range out { // outputs of an out layer
 		zk = 0                            // out layer k neuron input (sum of a hidden layer outputs)
 		for _, aj := range hiddenOut[i] { // Weighted outputs of a hidden layer k neuron
-			// Count k neuron of out layer inout (sum output layer input value)
+			// Count k neuron of out layer input (sum output layer input value)
 			zk += aj
 		}
-		// Count an error derivative
+		// Count an error derivative using delta rule
+		// FIXME: labels[i] is wrong value. Count hot encoding instead
 		cost = quadratic_derivative(ak, labels[i]) * sygmoid_derivative(zk)
 		for k := range synapses {
 			// Multiply an error by output of an appropriate hidden neuron
 			// Correct a synapse immediately (Stochastic gradient)
+			fmt.Println(len(hiddenOut[k]), i, k)
 			synapses[k][i] += cost * hiddenOut[k][i]
 		}
 		// TODO: correct biases
@@ -207,13 +226,14 @@ func main() {
 	synapses = addBiases(synapses)
 	set, err := getTrainigImages()
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 	labels, err := getTrainingLabels()
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
-	fmt.Println(labels)
-	prediction := forward(set[0], synapses)
-	fmt.Println(backward(prediction, labels, hiddenOut, synapses))
+	// NOTE: forward and backward propagation implemented for a single data set item.
+	// Also backward propagation supports only stochastic gradient and can't use batches of data items to learn
+	prediction, hiddenOut := forward(set[0], synapses)
+	fmt.Println(backward(prediction, labels[0], hiddenOut, synapses))
 }

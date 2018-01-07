@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
@@ -40,9 +42,41 @@ func getTrainigImages() (set [][]float64, err error) {
 	return
 }
 
-//func getTrainingLabels() [][]float64 {
+func getTrainingLabels() (labels []float64, err error) {
+	fp, err := os.Open("t10k-labels-idx1-ubyte")
+	if err != nil {
+		return
+	}
+	defer fp.Close()
+	labelsBuffer := bufio.NewReader(fp)
 
-//}
+	magic, err := binary.ReadUvarint(labelsBuffer)
+	if err != nil {
+		return
+	}
+	if magic != 2049 {
+		err = fmt.Errorf("Wrong magic number %d", magic)
+		return
+	}
+	fp.Seek(32, 1)
+
+	c, err := binary.ReadUvarint(labelsBuffer)
+	if err != nil {
+		return
+	}
+	count := int(c)
+	fp.Seek(32, 1)
+
+	var labe uint64
+	for i := 0; i < count*8; i += 8 {
+		labe, err = binary.ReadUvarint(labelsBuffer)
+		if err != nil {
+			return
+		}
+		labels = append(labels, float64(labe))
+	}
+	return
+}
 
 const SCALING_BASE = 0.7
 const INPUT = 784
@@ -102,20 +136,19 @@ func forward(set []float64, synapses [][]float64) (output []float64) {
 	for _, i := range set {
 		iSum += i * .00001 // Lowering of signal values to prevent overflow
 	}
-	iSum = sygmoid(iSum) // Activation of a signal at hidden layer
+	iSum = sygmoid(iSum) // Activation of signal at a hidden layer
 
-	li := len(synapses[0]) - 1
-	lm := len(synapses) - 2
+	li := len(synapses[0]) - 1 // Count of synapses between hidden and output layer
+	lm := len(synapses) - 2    // Count of neurons of a hidden layer apart from bias neuron
 	for i := 0; i < li; i++ {
 		oSum = 0
 		for j := 0; j < lm; j++ {
-			// Multiply summed input signal and multiply it to synapses
 			// Output layer neurons sums weighted signal
 			// TODO: save hidden layer output
 			oSum += synapses[j][i] * iSum // Output signal of a hidden layer
 		}
 		// Apply a bias
-		oSum += synapses[lm+1][i]
+		oSum += synapses[lm+1][i] // Bias doesn't use weights. Bias is a weight without a signal.
 		// Output layer applies activation function and returns per neuron single prediction value
 		output = append(output, sygmoid(oSum))
 	}
@@ -142,15 +175,15 @@ func sygmoid_derivative(n float64) float64 {
 // TODO: add biases per layer
 // (ak - tk)g`(zk)aj
 // ak - output of an output layer k
-// tk - correct answer for an output neuron
 // zk - output layer k input (sum of hidden layer outputs)
+// tk - correct answer for an output neuron
 // aj - output of a hidden layer neuron
 func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float64 {
 	var cost, zk float64
-	for i, ak := range out {
-		zk = 0
-		for _, aj := range hiddenOut[i] {
-			// Count output layer input value
+	for i, ak := range out { // outputs of an out layer
+		zk = 0                            // out layer k neuron input (sum of a hidden layer outputs)
+		for _, aj := range hiddenOut[i] { // Weighted outputs of a hidden layer k neuron
+			// Count k neuron of out layer inout (sum output layer input value)
 			zk += aj
 		}
 		// Count an error derivative
@@ -176,6 +209,11 @@ func main() {
 	if err != nil {
 		return
 	}
+	labels, err := getTrainingLabels()
+	if err != nil {
+		return
+	}
+	fmt.Println(labels)
 	prediction := forward(set[0], synapses)
 	fmt.Println(backward(prediction, labels, hiddenOut, synapses))
 }

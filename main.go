@@ -18,31 +18,50 @@ func getTrainigImages() (set [][]float64, err error) {
 	if err != nil {
 		return
 	}
+	defer imagesFile.Close()
 
-	var offset int
-	cursor := 512
+	var magic int32
+	err = binary.Read(imagesFile, binary.BigEndian, &magic)
+	if err != nil {
+		return
+	}
+	if magic != 2051 {
+		err = fmt.Errorf("Wrong magic number: %d. Expects: %d.", magic, 2051)
+		return
+	}
 
-	image := make([]byte, INPUT)
-	f64image := make([]float64, INPUT)
-	lim := TEST_SET_SIZE * INPUT
-	for cursor < lim {
-		offset, err = imagesFile.ReadAt(image, int64(cursor))
-		if err != nil {
-			if err == io.EOF {
-				err = nil
-			}
-			return
-		}
-		cursor += offset
+	var rows int32
+	err = binary.Read(imagesFile, binary.BigEndian, &rows)
+	if err != nil {
+		return
+	}
+
+	var lines int32
+	err = binary.Read(imagesFile, binary.BigEndian, &magic)
+	if err != nil {
+		return
+	}
+
+	inputSize := lines * rows
+
+	image := make([]byte, inputSize)
+	f64image := make([]float64, inputSize) // Prepared for recognition
+	// FIXME: Read dosn't seek descriptor. The loop is infinit.
+	for err == nil {
+		_, err = imagesFile.Read(image)
 		for i, v := range image {
 			f64image[i] = float64(v)
 		}
 		set = append(set, f64image)
 	}
+	if err == io.EOF {
+		err = nil
+	}
 	return
 }
 
 func getTrainingLabels() (labels [][]float64, err error) {
+	// FIXME: somewhere 10001 labels taken instead of 10000
 	fp, err := os.Open("t10k-labels-idx1-ubyte")
 	if err != nil {
 		return
@@ -59,14 +78,12 @@ func getTrainingLabels() (labels [][]float64, err error) {
 		err = fmt.Errorf("Wrong magic number: %d. Expects: %d.", magic, 2049)
 		return
 	}
-	fp.Seek(4, 0)
 
 	var count int32
 	err = binary.Read(fp, binary.BigEndian, &count)
 	if err != nil {
 		return
 	}
-	fp.Seek(4, 1)
 
 	for err == nil {
 		var labe uint8
@@ -82,6 +99,7 @@ func getTrainingLabels() (labels [][]float64, err error) {
 		labels = append(labels, hotEncoding)
 	}
 	if err == io.EOF {
+		fmt.Println("End")
 		err = nil
 	}
 	return
@@ -204,7 +222,6 @@ func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float6
 		for k := range exceptBiases {
 			// Multiply an error by output of an appropriate hidden neuron
 			// Correct a synapse immediately (Stochastic gradient)
-			fmt.Println(synapses[k])
 			synapses[k][i] += cost * hiddenOut[i][k]
 		}
 		// Corrct biases
@@ -231,6 +248,7 @@ func main() {
 	}
 	// NOTE: forward and backward propagation implemented for a single data set item.
 	// Also backward propagation supports only stochastic gradient and can't use batches of data items to learn
+	fmt.Println(len(set), len(labels))
 	prediction, hiddenOut := forward(set[0], synapses)
 	backward(prediction, labels[0], hiddenOut, synapses)
 }

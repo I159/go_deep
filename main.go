@@ -123,7 +123,6 @@ func NguyenWiderow() [][]float64 {
 	return randSynapses
 }
 
-// TODO: find out how use biases in forward propagation
 func addBiases(synapses [][]float64) [][]float64 {
 	synapses = append(synapses, make([]float64, OUTPUT))
 	for i := 0; i < OUTPUT; i++ {
@@ -193,6 +192,7 @@ func sygmoid_derivative(n float64) float64 {
 // aj - output of a hidden layer neuron
 func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float64 {
 	var cost, zk float64
+	exceptBiases := synapses[:HIDDEN]
 	for i, ak := range out { // outputs of an out layer
 		zk = 0                            // out layer k neuron input (sum of a hidden layer outputs)
 		for _, aj := range hiddenOut[i] { // Weighted outputs of a hidden layer k neuron
@@ -200,15 +200,16 @@ func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float6
 			zk += aj
 		}
 		// Count an error derivative using delta rule
-		// FIXME: labels[i] is wrong value. Count hot encoding instead
 		cost = quadratic_derivative(ak, labels[i]) * sygmoid_derivative(zk)
-		fmt.Println(labels[i], cost)
-		for k := range synapses {
+		for k := range exceptBiases {
 			// Multiply an error by output of an appropriate hidden neuron
 			// Correct a synapse immediately (Stochastic gradient)
-			synapses[k][i] += cost  * hiddenOut[i][k]
+			fmt.Println(synapses[k])
+			synapses[k][i] += cost * hiddenOut[i][k]
 		}
-		// TODO: correct biases
+		// Corrct biases
+		// The gradient of the cost function with respect to the bias for each neuron is simply its error signal!
+		synapses[HIDDEN][i] += cost
 	}
 	return synapses
 }

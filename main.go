@@ -120,7 +120,8 @@ const SCALING_BASE = 0.7
 const INPUT = 784
 const OUTPUT = 10
 const HIDDEN = 64
-const INPUT_BAIAS = .5
+const LEARNING_RATE = -.25
+const BIAS = .5
 
 // Create random 2D vector. Implement pre-init synapses
 func random() (out [][]float64) {
@@ -155,7 +156,7 @@ func NguyenWiderow() [][]float64 {
 func addBiases(synapses [][]float64) [][]float64 {
 	synapses = append(synapses, make([]float64, OUTPUT))
 	for i := 0; i < OUTPUT; i++ {
-		synapses[HIDDEN][i] = 1.
+		synapses[HIDDEN][i] = BIAS
 	}
 	return synapses
 }
@@ -196,20 +197,12 @@ func forward(set []float64, synapses [][]float64) (output []float64, hiddenOut [
 	return
 }
 
-func quadratic_cost(a, e []float64) float64 {
-	var sum float64
-	for i, v := range a {
-		sum += v - e[i]
-	}
-	return sum / 2.
-}
-
-func quadratic_derivative(a, e float64) float64 {
+func quadraticDerivative(a, e float64) float64 {
 	return a - e
 }
 
 // n: weighted sum of j-1 layer activations. A.k.a. j layer k neuron input
-func sygmoid_derivative(n float64) float64 {
+func sygmoidDerivative(n float64) float64 {
 	return sygmoid(n) * (1 - sygmoid(n))
 }
 
@@ -229,13 +222,14 @@ func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float6
 			zk += aj
 		}
 		// Count an error derivative using delta rule
-		cost = quadratic_derivative(ak, labels[i]) * sygmoid_derivative(zk)
+		cost = quadraticDerivative(ak, labels[i]) * sygmoidDerivative(zk)
 		for k := range exceptBiases {
 			// Multiply an error by output of an appropriate hidden neuron
 			// Correct a synapse immediately (Stochastic gradient)
-			synapses[k][i] += cost * hiddenOut[i][k]
+			// TODO: implement ability to learn in batches not ONLY stochastically
+			synapses[k][i] += LEARNING_RATE * cost * hiddenOut[i][k]
 		}
-		// Corrct biases
+		// Correct biases
 		// The gradient of the cost function with respect to the bias for each neuron is simply its error signal!
 		synapses[HIDDEN][i] += cost
 	}
@@ -244,6 +238,15 @@ func backward(out, labels []float64, hiddenOut, synapses [][]float64) [][]float6
 
 func restore(id int) [][]float64 {
 	return [][]float64{}
+}
+
+// TODO: implement overall network cost function
+func quadraticCost(al, er []float64) float64 {
+	var sum float64
+	for i, out := range al {
+		sum += math.Pow((out - er[i]), 2)
+	}
+	return sum * .5
 }
 
 func main() {
@@ -257,9 +260,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// NOTE: forward and backward propagation implemented for a single data set item.
-	// Also backward propagation supports only stochastic gradient and can't use batches of data items to learn
-	fmt.Println(len(set), len(labels))
-	prediction, hiddenOut := forward(set[0], synapses)
-	backward(prediction, labels[0], hiddenOut, synapses)
+	// TODO: implement loop through the all data set and display cost for each iteration
+	for i, v := range set {
+		prediction, hiddenOut := forward(v, synapses)
+		synapses = backward(prediction, labels[i], hiddenOut, synapses)
+		fmt.Println(quadraticCost(prediction, labels[i]))
+	}
 }

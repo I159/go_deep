@@ -14,14 +14,14 @@ import (
 const TEST_SET_SIZE = 10000
 
 func getTrainigImages() (set [][]float64, err error) {
-	imagesFile, err := os.Open("t10k-images-idx3-ubyte")
+	fp, err := os.Open("t10k-images-idx3-ubyte")
 	if err != nil {
 		return
 	}
-	defer imagesFile.Close()
+	defer fp.Close()
 
 	var magic int32
-	err = binary.Read(imagesFile, binary.BigEndian, &magic)
+	err = binary.Read(fp, binary.BigEndian, &magic)
 	if err != nil {
 		return
 	}
@@ -30,30 +30,38 @@ func getTrainigImages() (set [][]float64, err error) {
 		return
 	}
 
+	var numImgs int32
+	err = binary.Read(fp, binary.BigEndian, &numImgs)
+	if err != nil {
+		return
+	}
+
 	var rows int32
-	err = binary.Read(imagesFile, binary.BigEndian, &rows)
+	err = binary.Read(fp, binary.BigEndian, &rows)
 	if err != nil {
 		return
 	}
 
 	var lines int32
-	err = binary.Read(imagesFile, binary.BigEndian, &magic)
+	err = binary.Read(fp, binary.BigEndian, &lines)
 	if err != nil {
 		return
 	}
 
-	inputSize := lines * rows
-
-	image := make([]byte, inputSize)
-	f64image := make([]float64, inputSize) // Prepared for recognition
-	// FIXME: Read dosn't seek descriptor. The loop is infinit.
-	for err == nil {
-		_, err = imagesFile.Read(image)
-		for i, v := range image {
-			f64image[i] = float64(v)
+	lim := int(numImgs)
+	for i := 0; i < lim; i++ {
+		image := make([]uint8, lines*rows)
+		err = binary.Read(fp, binary.BigEndian, &image)
+		if err != nil {
+			break
 		}
-		set = append(set, f64image)
+		var setItem []float64
+		for _, pixel := range image {
+			setItem = append(setItem, float64(pixel))
+		}
+		set = append(set, setItem)
 	}
+
 	if err == io.EOF {
 		err = nil
 	}
@@ -85,9 +93,13 @@ func getTrainingLabels() (labels [][]float64, err error) {
 		return
 	}
 
-	for err == nil {
+	lim := int(count)
+	for i := 0; i < lim; i++ {
 		var labe uint8
 		err = binary.Read(fp, binary.BigEndian, &labe)
+		if err != nil {
+			break
+		}
 		var hotEncoding []float64
 		for i := 0; i < OUTPUT; i++ {
 			if int(labe) == i {
@@ -99,7 +111,6 @@ func getTrainingLabels() (labels [][]float64, err error) {
 		labels = append(labels, hotEncoding)
 	}
 	if err == io.EOF {
-		fmt.Println("End")
 		err = nil
 	}
 	return
@@ -164,9 +175,9 @@ func forward(set []float64, synapses [][]float64) (output []float64, hiddenOut [
 	}
 
 	iSum = sygmoid(iSum) // Activation of signal at a hidden layer
-	lm := len(synapses)    // Count of neurons of a hidden layer apart from bias neuron
+	lm := len(synapses)  // Count of neurons of a hidden layer apart from bias neuron
 
-	for i := range synapses[0]{
+	for i := range synapses[0] {
 		var outLine []float64
 		oSum = 0
 

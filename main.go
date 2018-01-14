@@ -69,7 +69,6 @@ func getTrainigImages() (set [][]float64, err error) {
 }
 
 func getTrainingLabels() (labels [][]float64, err error) {
-	// FIXME: somewhere 10001 labels taken instead of 10000
 	fp, err := os.Open("t10k-labels-idx1-ubyte")
 	if err != nil {
 		return
@@ -240,7 +239,6 @@ func restore(id int) [][]float64 {
 	return [][]float64{}
 }
 
-// TODO: implement overall network cost function
 func quadraticCost(al, er []float64) float64 {
 	var sum float64
 	for i, out := range al {

@@ -25,7 +25,7 @@ func (n *Perceptron) forward(set []float64) (output []float64, hiddenOut [][]flo
 		iSum += i * .00001 // Lowering of signal values to prevent overflow
 	}
 
-	iSum = sygmoid(iSum) // Activation of signal at a hidden layer
+	iSum = n.activation.activate(iSum) // Activation of signal at a hidden layer
 	lm := len(n.synapses)  // Count of neurons of a hidden layer apart from bias neuron
 
 	for i := range n.synapses[0] {
@@ -41,10 +41,44 @@ func (n *Perceptron) forward(set []float64) (output []float64, hiddenOut [][]flo
 		hiddenOut = append(hiddenOut, outLine)
 		// Apply a bias
 		oSum += synapses[lm-1][i] // Bias doesn't use weights. Bias is a weight without a signal.
-		output = append(output, sygmoid(oSum))
+		output = append(output, n.activation.activate(oSum))
 	}
 
 	return
 }
-func (n *Perceptron) backward()  {}
-func (n *Perceptron) recognize() {}
+
+func (n *Perceptron) backward(hiddenOut [][]float64, labels []float64)  {
+	var cost, zk float64
+	hiddenLen := len(n.synapses)
+
+	exceptBiases := n.synapses[:hiddenLen]
+	for i, ak := range out { // outputs of an out layer
+		zk = 0                            // out layer k neuron input (sum of a hidden layer outputs)
+		for _, aj := range hiddenOut[i] { // Weighted outputs of a hidden layer k neuron
+			// Count k neuron of out layer input (sum output layer input value)
+			zk += aj
+		}
+		// Count an error derivative using delta rule
+		cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
+		for k := range exceptBiases {
+			// Multiply an error by output of an appropriate hidden neuron
+			// Correct a synapse immediately (Stochastic gradient)
+			// TODO: implement ability to learn in batches not ONLY stochastically
+			n.synapses[k][i] += n.learningRate * cost * hiddenOut[i][k]
+		}
+		// Correct biases
+		// The gradient of the cost function with respect to the bias for each neuron is simply its error signal!
+		n.synapses[hiddenLen][i] += cost
+	}
+	//return synapses
+}
+
+func (n *Perceptron) Recognize() {
+	// Loop through a data set
+	// Return recognition and hidden loop
+	// Log cost to determine gradient
+}
+func (n *Perceptron) Learn() {
+	// Use Recognize loop to get recognition results and hidden layer intermediate results.
+	// Loop backward using obtained results for learning
+}

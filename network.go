@@ -73,11 +73,21 @@ func (n *Perceptron) backward(hiddenOut [][]float64, labels []float64)  {
 	//return synapses
 }
 
-func (n *Perceptron) Recognize() {
+func (n *Perceptron) Recognize(set [][]float64) (prediction []float, hiddenOut [][][]float64) {
 	// Loop through a data set
 	// Return recognition and hidden loop
 	// Log cost to determine gradient
+	var pred float64
+	var hidd [][]float64
+
+	for _, v := range set {
+		pred, hidd := n.forward(v)
+		prediction = append(prediction, pred)		
+		hiddenOut = append(hiddenOut, hidd)
+	}
+	return
 }
+
 func (n *Perceptron) Learn() {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning

@@ -286,9 +286,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	nn := NewPerceotron()
+	nn := NewPerceptron(&sygmoid{}, &quadratic{})
 	nn.Learn(set, labels)
-	recognition = n.Recognize(set)
+	recognition := nn.Recognize(set)
 	var l []float64
 	for i, r := range recognition {
 		l = tLabels[i]

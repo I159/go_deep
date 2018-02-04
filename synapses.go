@@ -6,32 +6,29 @@ import (
 	"time"
 )
 
-type synapsesOps interface {
-	intializeSynapses(hidden, input, output int)
-	// TODO: correct synapses using batches
-}
+const (
+	BIAS = .5
+	SCALING_BASE = .7
+)
 
-type denseSynapses struct {
-	synapses [][]float64
-}
-
-func (s *denseSynapses) randomInit()  {
+func randomInit(hidden, outout int) (synapses [][]float64) {
 	rand.Seed(time.Now().UTC().UnixNano())
-	for i := 0; i < HIDDEN; i++ {
-		out = append(s.synapses, []float64{})
-		for j := 0; j < OUTPUT; j++ {
-			s.synapses[i] = append(s.synapses[i], rand.Float64()-0.5)
+	for i := 0; i < hidden; i++ {
+		out = append(synapses, []float64{})
+		for j := 0; j < output; j++ {
+			synapses[i] = append(synapses[i], rand.Float64()-0.5)
 		}
 	}
+	return
 }
 
-func (s *denseSynapses) nguyenWiderow(hidden, input int) {
+func nguyenWiderow(synapses [][]float64, hidden, input int) [][]float64 {
 	s.randomInit()
 
 	var norm float64
 	beta := SCALING_BASE * math.Pow(hidden, 1.0/input)
 
-	for _, i := range s.synapses {
+	for _, i := range synapses {
 		norm = 0
 		for _, j := range i {
 			norm += j * j
@@ -41,24 +38,21 @@ func (s *denseSynapses) nguyenWiderow(hidden, input int) {
 			i[j] = (k * beta) / norm
 		}
 	}
+	return synapses
 }
 
-func (s *denseSynapses) addBiases() {
-	synapses = append(synapses, make([]float64, OUTPUT))
-	for i := 0; i < OUTPUT; i++ {
-		synapses[HIDDEN][i] = BIAS
+func addBiases(synapses [][]float64) {
+	nextLayerSize := len(synapses[0])
+	currentLayerSize := len(synapses)
+
+	synapses = append(synapses, make([]float64, nextLayerSize))
+	for i := 0; i < nextLayerSize; i++ {
+		synapses[currentLayerSize][i] = BIAS
 	}
+}
+
+func newSynapses(hidden, input, output) {
+	synapses := nguyenWiderow()
+	addBiases(synapses)
 	return synapses
 }
-
-func (s *denseSynapses) initializeSynapses(hidden, input, output) {
-	s.nguyenWiderow()
-	s.addBiases()
-}
-
-func newDenseSynapses() synapsesOps {
-	synapses := &denseSynapses{}
-	synapses.initializeSynapses()
-	return synapses
-}
-

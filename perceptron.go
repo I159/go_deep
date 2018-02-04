@@ -3,7 +3,7 @@ package main
 import "fmt"
 
 type Perceptron struct {
-	synapses   denseSynapses
+	synapses   [][]float64
 	activation activation
 	cost       cost
 }
@@ -93,8 +93,8 @@ func (n *Perceptron) Learn(set, labels, [][]float64) {
 func NewPerceptron(activation activation, cost cost) network {
 	return &Perceptron{
 		newDenseSynapses(),
-		activation{},
-		cost{},
+		activation,
+		cost,
 	}	
 }
 

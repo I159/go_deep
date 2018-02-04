@@ -7,10 +7,9 @@ type backwardPropagation interface {
 
 // TODO: decompose the interface
 type network interface {
-	synapsesOps
 	activation
 	cost
 	backwardPropagation
-	Learn(set, labels, [][]float64)
-	Recognize([][]float64)
+	Learn(set, labels [][]float64) []float64
+	Recognize([][]float64) [][]float64
 }

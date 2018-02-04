@@ -7,7 +7,7 @@ import (
 )
 
 type synapsesOps interface {
-	intializeSynapses(hidden, input, output int) [][]float64
+	intializeSynapses(hidden, input, output int)
 	// TODO: correct synapses using batches
 }
 
@@ -25,11 +25,11 @@ func (s *denseSynapses) randomInit()  {
 	}
 }
 
-func (s *denseSynapses) nguyenWiderow() {
+func (s *denseSynapses) nguyenWiderow(hidden, input int) {
 	s.randomInit()
 
 	var norm float64
-	beta := SCALING_BASE * math.Pow(HIDDEN, 1.0/INPUT)
+	beta := SCALING_BASE * math.Pow(hidden, 1.0/input)
 
 	for _, i := range s.synapses {
 		norm = 0
@@ -43,7 +43,7 @@ func (s *denseSynapses) nguyenWiderow() {
 	}
 }
 
-func addBiases(synapses [][]float64) [][]float64 {
+func (s *denseSynapses) addBiases() {
 	synapses = append(synapses, make([]float64, OUTPUT))
 	for i := 0; i < OUTPUT; i++ {
 		synapses[HIDDEN][i] = BIAS
@@ -51,4 +51,14 @@ func addBiases(synapses [][]float64) [][]float64 {
 	return synapses
 }
 
-// TODO: Implement initialization method
+func (s *denseSynapses) initializeSynapses(hidden, input, output) {
+	s.nguyenWiderow()
+	s.addBiases()
+}
+
+func newDenseSynapses() synapsesOps {
+	synapses := &denseSynapses{}
+	synapses.initializeSynapses()
+	return synapses
+}
+

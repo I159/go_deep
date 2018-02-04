@@ -62,7 +62,9 @@ func getMNISTTrainingImgs(path string) (set [][]float64, err error) {
 	return
 }
 
-func getMNISTTrainingLabels(path string) (labels [][]float64, err error) {
+func getMNISTTrainingLabels(path string, labeCount int) (labels [][]float64, err error) {
+	// Expect coherent integer labels starting from 0. Labels count is overall count of
+	// coherent labels list including 0.
 	fp, err := os.Open(path)
 	if err != nil {
 		return
@@ -94,7 +96,7 @@ func getMNISTTrainingLabels(path string) (labels [][]float64, err error) {
 			break
 		}
 		var hotEncoding []float64
-		for i := 0; i < OUTPUT; i++ {
+		for i := 0; i < labeCount; i++ {
 			if int(labe) == i {
 				hotEncoding = append(hotEncoding, 1)
 			} else {

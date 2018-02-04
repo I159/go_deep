@@ -1,11 +1,10 @@
 package main
 
-import "fmt"
-
 type Perceptron struct {
-	synapses   [][]float64
-	activation activation
-	cost       cost
+	learningRate float64
+	synapses     [][]float64
+	activation   activation
+	cost         cost
 }
 
 func (n *Perceptron) forward(set []float64) (output []float64, hiddenOut [][]float64) {
@@ -32,7 +31,7 @@ func (n *Perceptron) forward(set []float64) (output []float64, hiddenOut [][]flo
 
 		hiddenOut = append(hiddenOut, outLine)
 		// Apply a bias
-		oSum += synapses[lm-1][i] // Bias doesn't use weights. Bias is a weight without a signal.
+		oSum += n.synapses[lm-1][i] // Bias doesn't use weights. Bias is a weight without a signal.
 		output = append(output, n.activation.activate(oSum))
 	}
 
@@ -65,7 +64,7 @@ func (n *Perceptron) backward(out, labels []float64, hiddenOut [][]float64) {
 	//return synapses
 }
 
-func (n *Perceptron) Recognize(set [][]float64) (prediction []float, hiddenOut [][][]float64) {
+func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64, hiddenOut [][][]float64) {
 	// Loop through a data set
 	// Return recognition and hidden loop
 	// Log cost to determine gradient
@@ -80,21 +79,22 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction []float, hiddenOut [
 	return
 }
 
-func (n *Perceptron) Learn(set, labels, [][]float64) {
+func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
 	for i, v := range set {
-		prediction, hiddenOut := forward(v, n.synapses)
-		backward(prediction, labels[i], hiddenOut) // Adjust synapses in place.
-		fmt.Println(quadraticCost(prediction, labels[i]))
+		prediction, hiddenOut := n.forward(v)
+		n.backward(prediction, labels[i], hiddenOut) // Adjust synapses in place.
+		costGradient = append(costGradient, n.cost.countCost(prediction, labels[i]))
 	}
+	return
 }
 
-func NewPerceptron(activation activation, cost cost) network {
+func NewPerceptron(learningRate float64, activation activation, cost cost) network {
 	return &Perceptron{
+		learningRate,
 		newDenseSynapses(),
 		activation,
 		cost,
-	}	
+	}
 }
-

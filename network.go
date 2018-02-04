@@ -11,5 +11,5 @@ type network interface {
 	cost
 	backwardPropagation
 	Learn(set, labels [][]float64) []float64
-	Recognize([][]float64) [][]float64
+	Recognize([][]float64) ([][]float64, [][][]float64)
 }

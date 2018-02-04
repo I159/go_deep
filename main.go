@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 //import (
 //"encoding/binary"
@@ -286,9 +289,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	nn := NewPerceptron(&sygmoid{}, &quadratic{})
+	nn := NewPerceptron(.25, &sygmoid{}, &quadratic{})
 	nn.Learn(set, labels)
-	recognition := nn.Recognize(set)
+	recognition, cost := nn.Recognize(set)
+	fmt.Println(cost)
 	var l []float64
 	for i, r := range recognition {
 		l = tLabels[i]

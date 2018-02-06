@@ -289,7 +289,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	nn := NewPerceptron(.25, &sygmoid{}, &quadratic{})
+	nn := NewPerceptron(.25, &sygmoid{}, &quadratic{}, 784, 64, 10)
 	nn.Learn(set, labels)
 	recognition, cost := nn.Recognize(set)
 	fmt.Println(cost)

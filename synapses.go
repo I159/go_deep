@@ -11,10 +11,10 @@ const (
 	SCALING_BASE = .7
 )
 
-func randomInit(hidden, outout int) (synapses [][]float64) {
+func randomInit(hidden, output int) (synapses [][]float64) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	for i := 0; i < hidden; i++ {
-		out = append(synapses, []float64{})
+		synapses = append(synapses, []float64{})
 		for j := 0; j < output; j++ {
 			synapses[i] = append(synapses[i], rand.Float64()-0.5)
 		}
@@ -22,8 +22,8 @@ func randomInit(hidden, outout int) (synapses [][]float64) {
 	return
 }
 
-func nguyenWiderow(synapses [][]float64, hidden, input int) [][]float64 {
-	s.randomInit()
+func nguyenWiderow(hidden, input, output float64) [][]float64 {
+	synapses := randomInit(int(hidden), int(output))
 
 	var norm float64
 	beta := SCALING_BASE * math.Pow(hidden, 1.0/input)
@@ -51,8 +51,8 @@ func addBiases(synapses [][]float64) {
 	}
 }
 
-func newDenseSynapses(hidden, input, output) [][]float64 {
-	synapses := nguyenWiderow()
+func newDenseSynapses (hidden, input, output float64) [][]float64 {
+	synapses := nguyenWiderow(hidden, input, output)
 	addBiases(synapses)
 	return synapses
 }

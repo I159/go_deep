@@ -90,11 +90,11 @@ func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 	return
 }
 
-func NewPerceptron(learningRate float64, activation activation, cost cost) network {
+func NewPerceptron(learningRate float64, activation activation, cost cost, input, hidden, output float64) network {
 	return &Perceptron{
 		activation,
 		cost,
 		learningRate,
-		newDenseSynapses(),
+		newDenseSynapses(hidden, input, output),
 	}
 }

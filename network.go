@@ -1,8 +1,8 @@
 package main
 
 type backwardPropagation interface {
-	forward()
-	backward()
+	forward(set []float64) (output []float64, hiddenOut [][]float64)
+	backward(out, labels []float64, hiddenOut [][]float64)
 }
 
 // TODO: decompose the interface

@@ -1,10 +1,10 @@
 package main
 
 type Perceptron struct {
+	activation
+	cost
 	learningRate float64
 	synapses     [][]float64
-	activation   activation
-	cost         cost
 }
 
 func (n *Perceptron) forward(set []float64) (output []float64, hiddenOut [][]float64) {
@@ -92,9 +92,9 @@ func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 
 func NewPerceptron(learningRate float64, activation activation, cost cost) network {
 	return &Perceptron{
-		learningRate,
-		newDenseSynapses(),
 		activation,
 		cost,
+		learningRate,
+		newDenseSynapses(),
 	}
 }

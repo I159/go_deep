@@ -68,11 +68,11 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64, hiddenO
 	// Loop through a data set
 	// Return recognition and hidden loop
 	// Log cost to determine gradient
-	var pred float64
+	var pred []float64
 	var hidd [][]float64
 
 	for _, v := range set {
-		pred, hidd := n.forward(v)
+		pred, hidd = n.forward(v)
 		prediction = append(prediction, pred)
 		hiddenOut = append(hiddenOut, hidd)
 	}

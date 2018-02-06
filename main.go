@@ -290,13 +290,13 @@ func main() {
 	}
 
 	nn := NewPerceptron(.25, &sygmoid{}, &quadratic{}, 784, 64, 10)
-	nn.Learn(set, labels)
-	recognition, cost := nn.Recognize(set)
-	fmt.Println(cost)
-	var l []float64
-	for i, r := range recognition {
-		l = tLabels[i]
-		// Check for correctness:
-		// Max prediction value index should appropriate 1 value index in labels one hot encoding
+	learnCost := nn.Learn(set, labels)
+	fmt.Println(learnCost)
+	recognition, recCost := nn.Recognize(tSet)
+	fmt.Println(recCost)
+	for i, rec := range recognition {
+		for j, corr := range tLabels[i]  {
+			fmt.Println(rec[j], corr)
+		}
 	}
 }

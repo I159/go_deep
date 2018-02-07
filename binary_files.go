@@ -19,8 +19,8 @@ func getMNISTTrainingImgs(path string) (set [][]float64, err error) {
 	if err != nil {
 		return
 	}
-	if magic != 2051 {
-		err = fmt.Errorf("Wrong magic number: %d. Expects: %d.", magic, 2051)
+	if magic != 2049 {
+		err = fmt.Errorf("Wrong magic number: %d. Expects: %d.", magic, 2049)
 		return
 	}
 

@@ -19,8 +19,8 @@ func getMNISTTrainingImgs(path string) (set [][]float64, err error) {
 	if err != nil {
 		return
 	}
-	if magic != 2049 {
-		err = fmt.Errorf("Wrong magic number: %d. Expects: %d.", magic, 2049)
+	if magic != 2051 {
+		err = fmt.Errorf("Wrong magic number at images file: %d. Expects: %d.", magic, 2051)
 		return
 	}
 
@@ -78,7 +78,7 @@ func getMNISTTrainingLabels(path string, labeCount int) (labels [][]float64, err
 	}
 
 	if magic != 2049 {
-		err = fmt.Errorf("Wrong magic number: %d. Expects: %d.", magic, 2049)
+		err = fmt.Errorf("Wrong magic number at lebels file: %d. Expects: %d.", magic, 2049)
 		return
 	}
 

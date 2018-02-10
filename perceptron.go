@@ -40,7 +40,7 @@ func (n *Perceptron) forward(set []float64) (output []float64, hiddenOut [][]flo
 
 func (n *Perceptron) backward(out, labels []float64, hiddenOut [][]float64) {
 	var cost, zk float64
-	hiddenLen := len(n.synapses)
+	hiddenLen := len(n.synapses) - 1
 
 	exceptBiases := n.synapses[:hiddenLen]
 	for i, ak := range out { // outputs of an out layer
@@ -64,6 +64,7 @@ func (n *Perceptron) backward(out, labels []float64, hiddenOut [][]float64) {
 	//return synapses
 }
 
+// FIXME: create an extra wrapper to return only prediction and cost not hidden layer output
 func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64, hiddenOut [][][]float64) {
 	// Loop through a data set
 	// Return recognition and hidden loop

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 )
 
 func main() {
@@ -26,10 +28,28 @@ func main() {
 	}
 
 	nn := NewPerceptron(.25, &sygmoid{}, &quadratic{}, 784, 64, 10)
+
 	learnCost := nn.Learn(set, labels)
-	fmt.Println(learnCost)
+
+	f, err := os.Create("learn_costs.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	fmt.Fprint(w, learnCost)
+
+	// FIXME: this is not a cost! This is a hidden layer output!
 	recognition, recCost := nn.Recognize(tSet)
-	fmt.Println(recCost)
+
+	f, err = os.Create("recognition_costs.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	w = bufio.NewWriter(f)
+	fmt.Fprint(w, recCost)
+
 	for i, rec := range recognition {
 		for j, corr := range tLabels[i] {
 			fmt.Println(rec[j], corr)

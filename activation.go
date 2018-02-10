@@ -7,13 +7,13 @@ type activation interface {
 	actDerivative(float64) float64
 }
 
-type sygmoid struct{}
+type Sygmoid struct{}
 
-func (s *sygmoid) activate(n float64) float64 {
+func (s *Sygmoid) activate(n float64) float64 {
 	return 1 / (1 + math.Exp(n))
 }
 
-func (s *sygmoid) actDerivative(n float64) float64 {
+func (s *Sygmoid) actDerivative(n float64) float64 {
 	actVal := s.activate(n)
 	return actVal * (1 - actVal)
 }

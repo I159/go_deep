@@ -7,7 +7,7 @@ type Perceptron struct {
 	synapses     [][]float64
 }
 
-func (n *Perceptron) forward(set []float64) (output []float64, hiddenOut [][]float64) {
+func (n *Perceptron) forward(set []float64, keepHidden bool) (output []float64, hiddenOut [][]float64) {
 	var iSum, oSum float64
 
 	// Each neuron of a first hidden layer receives all signals from input layer
@@ -17,21 +17,25 @@ func (n *Perceptron) forward(set []float64) (output []float64, hiddenOut [][]flo
 	}
 
 	iSum = n.activation.activate(iSum) // Activation of signal at a hidden layer
-	lm := len(n.synapses)              // Count of neurons of a hidden layer apart from bias neuron
+	lm := len(n.synapses) - 1               // Count of neurons of a hidden layer apart from bias neuron 
 
 	for i := range n.synapses[0] {
-		var outLine []float64
+		var outRaw []float64
 		oSum = 0
 
 		for j := range n.synapses {
 			jIOut := n.synapses[j][i] * iSum
 			oSum += jIOut
-			outLine = append(outLine, jIOut)
+			if keepHidden {
+				outRaw = append(outRaw, jIOut)
+			}
 		}
 
-		hiddenOut = append(hiddenOut, outLine)
+		if keepHidden {
+			hiddenOut = append(hiddenOut, outRaw)
+		}
 		// Apply a bias
-		oSum += n.synapses[lm-1][i] // Bias doesn't use weights. Bias is a weight without a signal.
+		oSum += n.synapses[lm][i] // Bias doesn't use weights. Bias is a weight without a signal.
 		output = append(output, n.activation.activate(oSum))
 	}
 
@@ -64,28 +68,23 @@ func (n *Perceptron) backward(out, labels []float64, hiddenOut [][]float64) {
 	//return synapses
 }
 
-// FIXME: create an extra wrapper to return only prediction and cost not hidden layer output
-func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64, hiddenOut [][][]float64) {
-	// Loop through a data set
-	// Return recognition and hidden loop
-	// Log cost to determine gradient
+func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 	var pred []float64
-	var hidd [][]float64
 
 	for _, v := range set {
-		pred, hidd = n.forward(v)
+		pred, _ = n.forward(v, false)
 		prediction = append(prediction, pred)
-		hiddenOut = append(hiddenOut, hidd)
 	}
 	return
 }
+
 
 func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
 	for i, v := range set {
-		prediction, hiddenOut := n.forward(v)
-		n.backward(prediction, labels[i], hiddenOut) // Adjust synapses in place.
+		prediction, hiddenOut := n.forward(v, true)
+		n.backward(prediction, labels[i], hiddenOut) // Adjust synapses in place in stochastic manner
 		costGradient = append(costGradient, n.cost.countCost(prediction, labels[i]))
 	}
 	return

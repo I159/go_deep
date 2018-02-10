@@ -40,15 +40,7 @@ func main() {
 	fmt.Fprint(w, learnCost)
 
 	// FIXME: this is not a cost! This is a hidden layer output!
-	recognition, recCost := nn.Recognize(tSet)
-
-	f, err = os.Create("recognition_costs.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-	w = bufio.NewWriter(f)
-	fmt.Fprint(w, recCost)
+	recognition := nn.Recognize(tSet)
 
 	for i, rec := range recognition {
 		for j, corr := range tLabels[i] {

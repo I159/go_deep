@@ -1,7 +1,7 @@
 package main
 
 type backwardPropagation interface {
-	forward(set []float64) (output []float64, hiddenOut [][]float64)
+	forward(set []float64, keepHidden bool) (output []float64, hiddenOut [][]float64)
 	backward(out, labels []float64, hiddenOut [][]float64)
 }
 
@@ -11,5 +11,5 @@ type network interface {
 	cost
 	backwardPropagation
 	Learn(set, labels [][]float64) []float64
-	Recognize([][]float64) ([][]float64, [][][]float64)
+	Recognize([][]float64) ([][]float64)
 }

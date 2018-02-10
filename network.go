@@ -1,4 +1,4 @@
-package main
+package go_deep
 
 type backwardPropagation interface {
 	forward(set []float64, keepHidden bool) (output []float64, hiddenOut [][]float64)
@@ -12,4 +12,5 @@ type network interface {
 	backwardPropagation
 	Learn(set, labels [][]float64) []float64
 	Recognize([][]float64) ([][]float64)
+	Measure(set, labels [][]float64) (float64, []float64)
 }

@@ -1,4 +1,4 @@
-package main
+package go_deep
 
 type Perceptron struct {
 	activation
@@ -76,6 +76,32 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 		prediction = append(prediction, pred)
 	}
 	return
+}
+
+func (n *Perceptron) Measure(set, labels [][]float64) (float64, []float64) {
+	var pred []float64
+	var cost []float64
+	accuracy := map[bool]float64{true: 0, false: 0}
+
+	for i, v := range set {
+		pred, _ = n.forward(v, false)
+		cost = append(cost, n.countCost(pred, labels[i]))
+
+		maxPred := 0.
+		maxPredIdx := 0
+		for j, r := range pred {
+			if r > maxPred {
+				maxPred = r
+				maxPredIdx = j
+			}
+		}
+		for k, v := range labels[i] {
+			if v == 1 {
+				accuracy[k == maxPredIdx]++
+			}
+		}
+	}
+	return accuracy[true]/accuracy[false], cost
 }
 
 

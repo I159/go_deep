@@ -54,9 +54,9 @@ func (n *Perceptron) backward(currLayerOut, labels []float64, prevLayerOut, corr
 		}
 		// Delta rule
 		cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
-		for k := 0; k < prevLayerSize; i++ {
+		for k := 0; k < prevLayerSize; k++ {
 			// Corrections vector of the same shape as synapses vector
-			correction[k][i] += cost * prevLayerOut[i][k] 
+			correction[k][i] += cost * prevLayerOut[i][k]
 		}
 		// Add bias correction
 		correction[prevLayerSize][i] += cost

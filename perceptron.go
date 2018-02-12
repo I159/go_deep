@@ -79,7 +79,7 @@ func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 		if batchCounter >= n.batchSize {
 			for j := 0; j < prevLayerSize; j++ {
 				for k := 0; k < currLayerSize; k++ {
-					n.synapses[j][k] += n.learningRate * correction[j][k] / float64(n.batchSize)
+					n.synapses[j][k] -= n.learningRate * correction[j][k] / float64(n.batchSize)
 				}
 			}
 

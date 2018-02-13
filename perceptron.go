@@ -4,6 +4,7 @@ type Perceptron struct {
 	activation
 	cost
 	learningRate float64
+	batchSize    int
 	synapses     [][]float64
 }
 
@@ -17,7 +18,7 @@ func (n *Perceptron) forward(set []float64, keepHidden bool) (output []float64, 
 	}
 
 	iSum = n.activation.activate(iSum) // Activation of signal at a hidden layer
-	lm := len(n.synapses) - 1               // Count of neurons of a hidden layer apart from bias neuron 
+	lm := len(n.synapses) - 1          // Count of neurons of a hidden layer apart from bias neuron
 
 	for i := range n.synapses[0] {
 		var outRaw []float64
@@ -42,30 +43,67 @@ func (n *Perceptron) forward(set []float64, keepHidden bool) (output []float64, 
 	return
 }
 
-func (n *Perceptron) backward(out, labels []float64, hiddenOut [][]float64) {
+func (n *Perceptron) backward(currLayerOut, labels []float64, prevLayerOut, correction [][]float64) [][]float64 {
 	var cost, zk float64
-	hiddenLen := len(n.synapses) - 1
+	prevLayerSize := len(n.synapses) - 1
 
-	exceptBiases := n.synapses[:hiddenLen]
-	for i, ak := range out { // outputs of an out layer
-		zk = 0                            // out layer k neuron input (sum of a hidden layer outputs)
-		for _, aj := range hiddenOut[i] { // Weighted outputs of a hidden layer k neuron
-			// Count k neuron of out layer input (sum output layer input value)
-			zk += aj
+	for i, ak := range currLayerOut {
+		zk = 0
+		for _, aj := range prevLayerOut[i] {
+			zk += aj // Sum current layer input
 		}
-		// Count an error derivative using delta rule
+		// Delta rule
 		cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
-		for k := range exceptBiases {
-			// Multiply an error by output of an appropriate hidden neuron
-			// Correct a synapse immediately (Stochastic gradient)
-			// TODO: implement ability to learn in batches not ONLY stochastically
-			n.synapses[k][i] += n.learningRate * cost * hiddenOut[i][k]
+		for k := 0; k < prevLayerSize; k++ {
+			// Corrections vector of the same shape as synapses vector
+			correction[k][i] += cost * prevLayerOut[i][k]
 		}
-		// Correct biases
-		// The gradient of the cost function with respect to the bias for each neuron is simply its error signal!
-		n.synapses[hiddenLen][i] += cost
+		// Add bias correction
+		correction[prevLayerSize][i] += cost
 	}
-	//return synapses
+	return correction
+}
+
+func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
+	// Use Recognize loop to get recognition results and hidden layer intermediate results.
+	// Loop backward using obtained results for learning
+	var batchCounter int
+	var batchCost []float64
+
+	prevLayerSize := len(n.synapses)
+	currLayerSize := len(n.synapses[0])
+	correction := make([][]float64, prevLayerSize)
+
+	for i := range correction {
+		correction[i] = make([]float64, currLayerSize)
+	}
+
+	for i, v := range set {
+		if batchCounter >= n.batchSize {
+			for j := 0; j < prevLayerSize; j++ {
+				for k := 0; k < currLayerSize; k++ {
+					n.synapses[j][k] += n.learningRate * correction[j][k] / float64(n.batchSize)
+				}
+			}
+
+			batchCounter = 0
+			costSum := 0.0
+			correction := make([][]float64, prevLayerSize)
+			for i := range correction {
+				correction[i] = make([]float64, currLayerSize)
+				costSum += batchCost[i]
+			}
+			costGradient = append(costGradient, costSum/float64(n.batchSize))
+			batchCost = []float64{}
+		}
+
+		prediction, hiddenOut := n.forward(v, true)
+		correction = n.backward(prediction, labels[i], hiddenOut, correction)
+		batchCost = append(batchCost, n.cost.countCost(prediction, labels[i]))
+
+		batchCounter++
+	}
+	return
 }
 
 func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
@@ -101,26 +139,23 @@ func (n *Perceptron) Measure(set, labels [][]float64) (float64, []float64) {
 			}
 		}
 	}
-	return accuracy[true]/accuracy[false], cost
+	return accuracy[true] / accuracy[false], cost
 }
 
+func NewPerceptron(
+	learningRate float64,
+	activation activation,
+	cost cost,
+	input,
+	hidden,
+	output float64,
+	batchSize int) network {
 
-func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
-	// Use Recognize loop to get recognition results and hidden layer intermediate results.
-	// Loop backward using obtained results for learning
-	for i, v := range set {
-		prediction, hiddenOut := n.forward(v, true)
-		n.backward(prediction, labels[i], hiddenOut) // Adjust synapses in place in stochastic manner
-		costGradient = append(costGradient, n.cost.countCost(prediction, labels[i]))
-	}
-	return
-}
-
-func NewPerceptron(learningRate float64, activation activation, cost cost, input, hidden, output float64) network {
 	return &Perceptron{
-		activation,
-		cost,
-		learningRate,
-		newDenseSynapses(hidden, input, output),
+		activation:   activation,
+		cost:         cost,
+		learningRate: learningRate,
+		batchSize:    batchSize,
+		synapses:     newDenseSynapses(hidden, input, output),
 	}
 }

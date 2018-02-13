@@ -2,7 +2,7 @@ package go_deep
 
 type backwardPropagation interface {
 	forward(set []float64, keepHidden bool) (output []float64, hiddenOut [][]float64)
-	backward(out, labels []float64, hiddenOut [][]float64)
+	backward(out, labels []float64, hiddenOut, correction [][]float64) [][]float64
 }
 
 // TODO: decompose the interface

@@ -68,9 +68,12 @@ func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
 	var batchCounter int
+	var batchCost []float64
+
 	prevLayerSize := len(n.synapses)
 	currLayerSize := len(n.synapses[0])
 	correction := make([][]float64, prevLayerSize)
+
 	for i := range correction {
 		correction[i] = make([]float64, currLayerSize)
 	}
@@ -79,20 +82,24 @@ func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 		if batchCounter >= n.batchSize {
 			for j := 0; j < prevLayerSize; j++ {
 				for k := 0; k < currLayerSize; k++ {
-					n.synapses[j][k] -= n.learningRate * correction[j][k] / float64(n.batchSize)
+					n.synapses[j][k] += n.learningRate * correction[j][k] / float64(n.batchSize)
 				}
 			}
 
 			batchCounter = 0
+			costSum := 0.0
 			correction := make([][]float64, prevLayerSize)
 			for i := range correction {
 				correction[i] = make([]float64, currLayerSize)
+				costSum += batchCost[i]
 			}
+			costGradient = append(costGradient, costSum/float64(n.batchSize))
+			batchCost = []float64{}
 		}
 
 		prediction, hiddenOut := n.forward(v, true)
 		correction = n.backward(prediction, labels[i], hiddenOut, correction)
-		costGradient = append(costGradient, n.cost.countCost(prediction, labels[i]))
+		batchCost = append(batchCost, n.cost.countCost(prediction, labels[i]))
 
 		batchCounter++
 	}

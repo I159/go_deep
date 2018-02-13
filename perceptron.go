@@ -1,10 +1,13 @@
 package go_deep
 
+import "fmt"
+
 type Perceptron struct {
 	activation
 	cost
 	learningRate float64
 	batchSize    int
+	epochs       int
 	synapses     [][]float64
 }
 
@@ -78,30 +81,34 @@ func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 		correction[i] = make([]float64, currLayerSize)
 	}
 
-	for i, v := range set {
-		if batchCounter >= n.batchSize {
-			for j := 0; j < prevLayerSize; j++ {
-				for k := 0; k < currLayerSize; k++ {
-					n.synapses[j][k] += n.learningRate * correction[j][k] / float64(n.batchSize)
+	fmt.Println(n.epochs)
+	for j := 0; j <= n.epochs; j++ {
+		for i, v := range set {
+			if batchCounter >= n.batchSize {
+				for j := 0; j < prevLayerSize; j++ {
+					for k := 0; k < currLayerSize; k++ {
+						n.synapses[j][k] += n.learningRate * correction[j][k] / float64(n.batchSize)
+					}
 				}
+
+				batchCounter = 0
+				costSum := 0.0
+				correction := make([][]float64, prevLayerSize)
+				for i := range correction {
+					correction[i] = make([]float64, currLayerSize)
+					costSum += batchCost[i]
+				}
+				costGradient = append(costGradient, costSum/float64(n.batchSize))
+				batchCost = []float64{}
 			}
 
-			batchCounter = 0
-			costSum := 0.0
-			correction := make([][]float64, prevLayerSize)
-			for i := range correction {
-				correction[i] = make([]float64, currLayerSize)
-				costSum += batchCost[i]
-			}
-			costGradient = append(costGradient, costSum/float64(n.batchSize))
-			batchCost = []float64{}
+			// TODO: separate layers of neurons
+			prediction, hiddenOut := n.forward(v, true)
+			correction = n.backward(prediction, labels[i], hiddenOut, correction)
+			batchCost = append(batchCost, n.cost.countCost(prediction, labels[i]))
+
+			batchCounter++
 		}
-
-		prediction, hiddenOut := n.forward(v, true)
-		correction = n.backward(prediction, labels[i], hiddenOut, correction)
-		batchCost = append(batchCost, n.cost.countCost(prediction, labels[i]))
-
-		batchCounter++
 	}
 	return
 }
@@ -125,6 +132,7 @@ func (n *Perceptron) Measure(set, labels [][]float64) (float64, []float64) {
 		pred, _ = n.forward(v, false)
 		cost = append(cost, n.countCost(pred, labels[i]))
 
+		// FIXME: max prediction value is kind of random choice not maximum
 		maxPred := 0.
 		maxPredIdx := 0
 		for j, r := range pred {
@@ -132,9 +140,12 @@ func (n *Perceptron) Measure(set, labels [][]float64) (float64, []float64) {
 				maxPred = r
 				maxPredIdx = j
 			}
+			fmt.Println(j, r)
 		}
+		fmt.Printf("MAX: %f\n", maxPred)
 		for k, v := range labels[i] {
 			if v == 1 {
+				//fmt.Println(k, maxPredIdx)
 				accuracy[k == maxPredIdx]++
 			}
 		}
@@ -149,6 +160,7 @@ func NewPerceptron(
 	input,
 	hidden,
 	output float64,
+	epochs,
 	batchSize int) network {
 
 	return &Perceptron{
@@ -156,6 +168,7 @@ func NewPerceptron(
 		cost:         cost,
 		learningRate: learningRate,
 		batchSize:    batchSize,
+		epochs:       epochs,
 		synapses:     newDenseSynapses(hidden, input, output),
 	}
 }

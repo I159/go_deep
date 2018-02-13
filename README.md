@@ -18,4 +18,4 @@ If you have the same goals of learning or/and you have more solid math or archit
 
 ## Current state of the project
 
-I spent a lot of time to build architecturally correct project but I lost algorithm itself. Perceptron (I started from this simplest NN in my research) could be implemented in 50 lines of code easily but with all my layers of abstraction and overabundant asynchrony I drawned in massive debug. Then I've been busy with billed projects and completly lost the point where the things went wrong. I spent several hours to recreate backpropagation in strightforward manner and then grow layers and abltraction on workable algorithm mostly from scratch.
+Perceptron (aka dense neural network) is implemented with ability to add different activation and cost functions.

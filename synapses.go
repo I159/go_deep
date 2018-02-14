@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	BIAS = 1
+	BIAS = 0.25
 	SCALING_BASE = .7
 )
 

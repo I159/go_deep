@@ -12,5 +12,4 @@ type network interface {
 	backwardPropagation
 	Learn(set, labels [][]float64) []float64
 	Recognize([][]float64) ([][]float64)
-	Measure(set, labels [][]float64) (float64, []float64)
 }

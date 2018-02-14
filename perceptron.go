@@ -1,6 +1,8 @@
 package go_deep
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Perceptron struct {
 	activation
@@ -121,36 +123,6 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 		prediction = append(prediction, pred)
 	}
 	return
-}
-
-func (n *Perceptron) Measure(set, labels [][]float64) (float64, []float64) {
-	var pred []float64
-	var cost []float64
-	accuracy := map[bool]float64{true: 0, false: 0}
-
-	for i, v := range set {
-		pred, _ = n.forward(v, false)
-		cost = append(cost, n.countCost(pred, labels[i]))
-
-		// FIXME: max prediction value is kind of random choice not maximum
-		maxPred := 0.
-		maxPredIdx := 0
-		for j, r := range pred {
-			if r > maxPred {
-				maxPred = r
-				maxPredIdx = j
-			}
-			fmt.Println(j, r)
-		}
-		fmt.Printf("MAX: %f\n", maxPred)
-		for k, v := range labels[i] {
-			if v == 1 {
-				//fmt.Println(k, maxPredIdx)
-				accuracy[k == maxPredIdx]++
-			}
-		}
-	}
-	return accuracy[true] / accuracy[false], cost
 }
 
 func NewPerceptron(

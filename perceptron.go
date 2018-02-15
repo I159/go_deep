@@ -1,9 +1,5 @@
 package go_deep
 
-import (
-	"fmt"
-)
-
 type Perceptron struct {
 	activation
 	cost
@@ -69,7 +65,7 @@ func (n *Perceptron) backward(currLayerOut, labels []float64, prevLayerOut, corr
 	return correction
 }
 
-func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
+func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64) {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
 	var batchCounter int
@@ -83,13 +79,12 @@ func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 		correction[i] = make([]float64, currLayerSize)
 	}
 
-	fmt.Println(n.epochs)
-	for j := 0; j <= n.epochs; j++ {
+	for j := 0; j <= epochs; j++ {
 		for i, v := range set {
-			if batchCounter >= n.batchSize {
+			if batchCounter >= batchSize {
 				for j := 0; j < prevLayerSize; j++ {
 					for k := 0; k < currLayerSize; k++ {
-						n.synapses[j][k] += n.learningRate * correction[j][k] / float64(n.batchSize)
+						n.synapses[j][k] += n.learningRate * correction[j][k] / float64(batchSize)
 					}
 				}
 
@@ -104,7 +99,6 @@ func (n *Perceptron) Learn(set, labels [][]float64) (costGradient []float64) {
 				batchCost = []float64{}
 			}
 
-			// TODO: separate layers of neurons
 			prediction, hiddenOut := n.forward(v, true)
 			correction = n.backward(prediction, labels[i], hiddenOut, correction)
 			batchCost = append(batchCost, n.cost.countCost(prediction, labels[i]))
@@ -131,16 +125,12 @@ func NewPerceptron(
 	cost cost,
 	input,
 	hidden,
-	output float64,
-	epochs,
-	batchSize int) network {
+	output float64) network {
 
 	return &Perceptron{
 		activation:   activation,
 		cost:         cost,
 		learningRate: learningRate,
-		batchSize:    batchSize,
-		epochs:       epochs,
 		synapses:     newDenseSynapses(hidden, input, output),
 	}
 }

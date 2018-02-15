@@ -9,38 +9,48 @@ type Perceptron struct {
 	synapses     [][]float64
 }
 
-func (n *Perceptron) forward(set []float64, keepHidden bool) (output []float64, hiddenOut [][]float64) {
-	var iSum, oSum float64
-
+func (n *Perceptron) inputLayer(set []float64) (activatedSums []float64) {
 	// Each neuron of a first hidden layer receives all signals from input layer
 	// and sums it. Input layer doesn't change input signal
+	var iSum float64
+
 	for _, i := range set {
 		iSum += i * .00001 // Lowering of signal values to prevent overflow
 	}
 
 	iSum = n.activation.activate(iSum) // Activation of signal at a hidden layer
-	lm := len(n.synapses) - 1          // Count of neurons of a hidden layer apart from bias neuron
-
-	for i := range n.synapses[0] {
-		var outRaw []float64
-		oSum = 0
-
-		for j := range n.synapses {
-			jIOut := n.synapses[j][i] * iSum
-			oSum += jIOut
-			if keepHidden {
-				outRaw = append(outRaw, jIOut)
-			}
-		}
-
-		if keepHidden {
-			hiddenOut = append(hiddenOut, outRaw)
-		}
-		// Apply a bias
-		oSum += n.synapses[lm][i] // Bias doesn't use weights. Bias is a weight without a signal.
-		output = append(output, n.activation.activate(oSum))
+	for _ = range n.synapses {
+		activatedSums = append(activatedSums, iSum)
 	}
 
+	return
+}
+
+func (n *Perceptron) forward(input []float64) (output []float64, midOut [][]float64) {
+	var inputSum int
+	currLayerSize := len(n.synapses)
+	midOut = make([][]float64, len(n.synapses[0]))
+
+	for i := range n.synapses[0] {
+
+		oSum = 0
+		for j := 0; j < currLayerSize - 1; j++ {
+			if midOut[i] == nil {
+				midOut[i] == make([]float64, currLayerSize)
+			}
+			midOut[i][j] = n.synapses[j][i] * input[j]
+		}
+		midOut[i][j+1] += n.synapses[j+1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
+	}
+
+	// Sum and activate output/input of a next layer
+	for _, raw := range midOut {
+		inputSum = 0
+		for _, item := range raw {
+			inputSum += n.activate(item)
+		}
+		output = append(inputSum)
+	}
 	return
 }
 

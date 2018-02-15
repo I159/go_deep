@@ -13,7 +13,7 @@ const (
 
 func randomInit(hidden, output int) (synapses [][]float64) {
 	rand.Seed(time.Now().UTC().UnixNano())
-	for i := 0; i < hidden; i++ {
+	for i := 0; i < hidden-1; i++ {
 		synapses = append(synapses, []float64{})
 		for j := 0; j < output; j++ {
 			synapses[i] = append(synapses[i], rand.Float64()-0.5)
@@ -41,14 +41,12 @@ func nguyenWiderow(hidden, input, output float64) [][]float64 {
 	return synapses
 }
 
-func addBiases(synapses [][]float64) {
-	nextLayerSize := len(synapses[0])
-	currentLayerSize := len(synapses)
-
-	synapses = append(synapses, make([]float64, nextLayerSize))
-	for i := 0; i < nextLayerSize; i++ {
-		synapses[currentLayerSize][i] = BIAS
+func addBiases(synapses [][]float64, output int) {
+	biasSignal := make([]float64, output)
+	for i := range biasSignal {
+		biasSignal[i] = BIAS
 	}
+	synapses = append(synapses, biasSignal)
 }
 
 func newDenseSynapses (hidden, input, output float64) [][]float64 {

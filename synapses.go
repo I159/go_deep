@@ -51,6 +51,6 @@ func addBiases(synapses [][]float64, output int) {
 
 func newDenseSynapses (hidden, input, output float64) [][]float64 {
 	synapses := nguyenWiderow(hidden, input, output)
-	addBiases(synapses)
+	addBiases(synapses, int(output))
 	return synapses
 }

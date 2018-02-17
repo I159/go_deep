@@ -1,15 +1,14 @@
 package go_deep
 
 type Perceptron struct {
-	// TODO: use layers with per layer activation and cost functions instead of global activatioin and cost.
-	// inputLayer
-	// hiddenFirstLayer
-	// []hiddenLayer
-	// outputLayer
-	activation
-	cost
-	learningRate float64
-	synapses     [][]float64
+	input       inputLayer
+	hiddenFirst hiddenFirstLayer
+	hidden      []hiddenLayer
+	output      outputLayer
+	//activation
+	//cost
+	//learningRate float64
+	//synapses     [][]float64
 }
 
 // TODO: deprecated.
@@ -34,57 +33,60 @@ func (n *Perceptron) inputLayer(set []float64) (output [][]float64) {
 	return
 }
 
-func (n *Perceptron) hiddenForward(rowInput [][]float64) ([][]float64, [][]float64) {
-	var iSum float64
-	var input []float64
-	currLayerSize := len(n.synapses)
-	output := make([][]float64, len(n.synapses[0]))
+//func (n *Perceptron) hiddenForward(rowInput [][]float64) ([][]float64, [][]float64) {
+//var iSum float64
+//var input []float64
+//currLayerSize := len(n.synapses)
+//output := make([][]float64, len(n.synapses[0]))
 
-	for _, raw := range rowInput {
-		for _, item := range raw {
-			iSum += item
-		}
-		input = append(input, n.activate(iSum))
-	}
+//for _, raw := range rowInput {
+//for _, item := range raw {
+//iSum += item
+//}
+//input = append(input, n.activate(iSum))
+//}
 
-	// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
-	var j int
-	for i := range n.synapses[0] {
-		for j = 0; j < currLayerSize - 1; j++ {
-			if output[i] == nil {
-				output[i] = make([]float64, currLayerSize)
-			}
-			output[i][j] = n.synapses[j][i] * input[j]
-		}
-		output[i][j+1] += n.synapses[j+1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
-	}
+//// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
+//var j int
+//for i := range n.synapses[0] {
+//for j = 0; j < currLayerSize-1; j++ {
+//if output[i] == nil {
+//output[i] = make([]float64, currLayerSize)
+//}
+//output[i][j] = n.synapses[j][i] * input[j]
+//}
+//output[i][j+1] += n.synapses[j+1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
+//}
 
-	// Keep layer input for backward propagation
-	return output, rowInput
-}
+//// Keep layer input for backward propagation
+//return output, rowInput
+//}
 
-func (n *Perceptron) outputForward(rowInput [][]float64) ([]float64, [][]float64) {
-	var output []float64
-	var iSum float64
+//func (n *Perceptron) outputForward(rowInput [][]float64) ([]float64, [][]float64) {
+//var output []float64
+//var iSum float64
 
-	for _, raw := range rowInput {
-		iSum = 0
-		for _, item := range raw {
-			iSum += item
-		}
-		output = append(output, n.activate(iSum))
-	}
+//for _, raw := range rowInput {
+//iSum = 0
+//for _, item := range raw {
+//iSum += item
+//}
+//output = append(output, n.activate(iSum))
+//}
 
-	// Keep a layer input for backward propagation
-	return output, rowInput
-}
+//// Keep a layer input for backward propagation
+//return output, rowInput
+//}
 
 func (n *Perceptron) forward(rowInput []float64) ([]float64, [][]float64) {
-	// Transmit input data through all the layers	
+	// NOTE: this is a single layer implementation
+	n.output.forward(
+		n.hiddenFirst.forward(
+			n.input.forward(rowInput),
+		),
+	)
 	return []float64{}, [][]float64{}
 }
-
-
 
 func (n *Perceptron) backward(currLayerOut, labels []float64, prevLayerOut, correction [][]float64) [][]float64 {
 	var cost, zk float64

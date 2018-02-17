@@ -8,8 +8,9 @@ type firstHiddenLayer interface {
 	activation
 	cost
 	forward(float64) [][]float64
-	backward()
+	backward([][]float64)
 	init()
+	applyCorrection(float64)
 }
 
 type hiddenLayer interface {
@@ -18,6 +19,7 @@ type hiddenLayer interface {
 	forward(arg) return_val
 	backward(arg) return_val
 	init(arg) return_val
+	applyCorrection()
 }
 
 type outputLayer interface {
@@ -45,7 +47,7 @@ func (l *inputDense) farward(setItem []float64) (output float64) {
 
 type hiddenDenseFirst struct {
 	synapseInitializer
-	synapses [][]float64
+	corrections, synapses [][]float64
 }
 
 func (l *hiddenDenseFirst) init() {
@@ -67,8 +69,22 @@ func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 	return output
 }
 
-func (l *hiddenDense) backward() error {
+func (l *hiddenDenseFirst) backward(corrections [][]float64) {
+	for i, corr := range corrections {
+		for j, c := range corr {
+			l.corrections[i][j] += c
+		}
+	}
 }
+
+func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
+	for i, corr := range l.corrections {
+		for j, c := range corr {
+			l.synapses[i][j] += l.learningRate * c / batchSize
+		}
+	}
+}
+
 
 type outputDense struct {
 	out	[][]float64
@@ -88,5 +104,5 @@ func (l *outputDense) forward(rowInput [][]float64) (output []float64)
 }
 
 func (n *outputDense) backward() error {
-	
+	// Backward propagation between output and hidden layer
 }

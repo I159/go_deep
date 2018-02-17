@@ -12,7 +12,7 @@ const (
 )
 
 type synapseInitializer interface {
-	init(prev, curr, next) [][]float64
+	init() [][]float64
 }
 
 type denseSynapses struct {

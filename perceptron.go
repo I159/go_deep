@@ -2,6 +2,10 @@ package go_deep
 
 type Perceptron struct {
 	// TODO: use layers with per layer activation and cost functions instead of global activatioin and cost.
+	// inputLayer
+	// hiddenFirstLayer
+	// []hiddenLayer
+	// outputLayer
 	activation
 	cost
 	learningRate float64

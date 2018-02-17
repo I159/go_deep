@@ -1,14 +1,14 @@
 package go_deep
 
 type Perceptron struct {
+	// TODO: use layers with per layer activation and cost functions instead of global activatioin and cost.
 	activation
 	cost
 	learningRate float64
-	batchSize    int
-	epochs       int
 	synapses     [][]float64
 }
 
+// TODO: deprecated.
 func (n *Perceptron) inputLayer(set []float64) (output [][]float64) {
 	// Each neuron of a first hidden layer receives all signals from input layer
 	// and sums it. Input layer doesn't change input signal

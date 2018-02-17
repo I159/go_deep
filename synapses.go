@@ -11,24 +11,32 @@ const (
 	SCALING_BASE = .7
 )
 
-func randomInit(hidden, output int) (synapses [][]float64) {
-	rand.Seed(time.Now().UTC().UnixNano())
-	for i := 0; i < hidden-1; i++ {
-		synapses = append(synapses, []float64{})
-		for j := 0; j < output; j++ {
-			synapses[i] = append(synapses[i], rand.Float64()-0.5)
-		}
-	}
-	return
+type synapseInitializer interface {
+	init(prev, curr, next) [][]float64
 }
 
-func nguyenWiderow(hidden, input, output float64) [][]float64 {
-	synapses := randomInit(int(hidden), int(output))
+type denseSynapses struct {
+	prev int
+	curr int
+	next int
+	synapses [][]float64 
+}
 
+func (s *denseSynapses) randomInit() {
+	rand.Seed(time.Now().UTC().UnixNano())
+	for i := 0; i < s.curr-1; i++ {
+		s.synapses = append(s.synapses, []float64{})
+		for j := 0; j < s.next; j++ {
+			s.synapses[i] = append(s.synapses[i], rand.Float64()-0.5)
+		}
+	}
+}
+
+func (s *denseSynapses) nguyenWiderow() {
 	var norm float64
-	beta := SCALING_BASE * math.Pow(hidden, 1.0/input)
+	beta := SCALING_BASE * math.Pow(s.curr, 1.0/s.prev)
 
-	for _, i := range synapses {
+	for _, i := range s.synapses {
 		norm = 0
 		for _, j := range i {
 			norm += j * j
@@ -38,19 +46,19 @@ func nguyenWiderow(hidden, input, output float64) [][]float64 {
 			i[j] = (k * beta) / norm
 		}
 	}
-	return synapses
 }
 
-func addBiases(synapses [][]float64, output int) {
-	biasSignal := make([]float64, output)
+func (s *denseSynapses) addBiases() {
+	biasSignal := make([]float64, s.next)
 	for i := range biasSignal {
 		biasSignal[i] = BIAS
 	}
-	synapses = append(synapses, biasSignal)
+	s.synapses = append(s.synapses, biasSignal)
 }
 
-func newDenseSynapses (hidden, input, output float64) [][]float64 {
-	synapses := nguyenWiderow(hidden, input, output)
-	addBiases(synapses, int(output))
-	return synapses
+func (s *denseSynapses) init() [][]float64 {
+	s.randomInit()
+	s.nguyenWiderow()
+	s.addBiases()
+	return s.synapses
 }

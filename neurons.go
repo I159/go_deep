@@ -1,7 +1,13 @@
 package go_deep
 
 type inputLayer interface {
-	forward(arg) return_val
+	forward(setItem []float64) (output float64)
+}
+
+type firstHiddenLayer interface {
+	forward(float64) [][]float64
+	backward()
+	init()
 }
 
 type hiddenLayer interface {
@@ -17,11 +23,19 @@ type outputLayer interface {
 
 type inputDense struct {}
 
-func (l *inputDense) farward() {
-	
+// Optimize input layer and create firstHidden layer and extraHidden layer with different input vector shape
+func (l *inputDense) farward(setItem []float64) (output float64) {
+	// Each neuron of a first hidden layer receives all signals from input layer
+	// and sums it. Input layer doesn't change input signal
+	for _, i := range set {
+		output += i
+	}
+	output *= .00001
+	return
 }
 
-type hiddenDense struct {
+type hiddenDenseFirst struct {
+	synapseInitializer
 	synapses [][]float64
 	prevOut [][]float64
 }

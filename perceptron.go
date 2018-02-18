@@ -12,26 +12,26 @@ type Perceptron struct {
 }
 
 // TODO: deprecated.
-func (n *Perceptron) inputLayer(set []float64) (output [][]float64) {
-	// Each neuron of a first hidden layer receives all signals from input layer
-	// and sums it. Input layer doesn't change input signal
-	var iSum float64
+//func (n *Perceptron) inputLayer(set []float64) (output [][]float64) {
+	//// Each neuron of a first hidden layer receives all signals from input layer
+	//// and sums it. Input layer doesn't change input signal
+	//var iSum float64
 
-	for _, i := range set {
-		iSum += i
-	}
+	//for _, i := range set {
+		//iSum += i
+	//}
 
-	iSum *= .00001
+	//iSum *= .00001
 
-	nextLayerSize := len(n.synapses[0])
-	for i := range n.synapses {
-		output = append(output, make([]float64, nextLayerSize))
-		for _ = range n.synapses[i] {
-			output[i] = append(output[i], iSum)
-		}
-	}
-	return
-}
+	//nextLayerSize := len(n.synapses[0])
+	//for i := range n.synapses {
+		//output = append(output, make([]float64, nextLayerSize))
+		//for _ = range n.synapses[i] {
+			//output[i] = append(output[i], iSum)
+		//}
+	//}
+	//return
+//}
 
 //func (n *Perceptron) hiddenForward(rowInput [][]float64) ([][]float64, [][]float64) {
 //var iSum float64
@@ -78,35 +78,28 @@ func (n *Perceptron) inputLayer(set []float64) (output [][]float64) {
 //return output, rowInput
 //}
 
-func (n *Perceptron) forward(rowInput []float64) ([]float64, [][]float64) {
-	// NOTE: this is a single layer implementation
-	n.output.forward(
-		n.hiddenFirst.forward(
-			n.input.forward(rowInput),
-		),
+func (n *Perceptron) backward(prediction [][]float64, labels []float64) {
+	n.hiddenFirst.backward(
+		n.output.backward(labels)
 	)
-	return []float64{}, [][]float64{}
-}
+	//var cost, zk float64
+	//prevLayerSize := len(n.synapses) - 1
 
-func (n *Perceptron) backward(currLayerOut, labels []float64, prevLayerOut, correction [][]float64) [][]float64 {
-	var cost, zk float64
-	prevLayerSize := len(n.synapses) - 1
-
-	for i, ak := range currLayerOut {
-		zk = 0
-		for _, aj := range prevLayerOut[i] {
-			zk += aj // Sum current layer input
-		}
-		// Delta rule
-		cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
-		for k := 0; k < prevLayerSize; k++ {
-			// Corrections vector of the same shape as synapses vector
-			correction[k][i] += cost * prevLayerOut[i][k]
-		}
-		// Add bias correction
-		correction[prevLayerSize][i] += cost
-	}
-	return correction
+	//for i, ak := range currLayerOut {
+		//zk = 0
+		//for _, aj := range prevLayerOut[i] {
+			//zk += aj // Sum current layer input
+		//}
+		//// Delta rule
+		//cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
+		//for k := 0; k < prevLayerSize; k++ {
+			//// Corrections vector of the same shape as synapses vector
+			//correction[k][i] += cost * prevLayerOut[i][k]
+		//}
+		//// Add bias correction
+		//correction[prevLayerSize][i] += cost
+	//}
+	//return correction
 }
 
 func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64) {
@@ -115,42 +108,49 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 	var batchCounter int
 	var batchCost []float64
 
-	prevLayerSize := len(n.synapses)
-	currLayerSize := len(n.synapses[0])
-	correction := make([][]float64, prevLayerSize)
-
-	for i := range correction {
-		correction[i] = make([]float64, currLayerSize)
-	}
-
 	for j := 0; j <= epochs; j++ {
 		for i, v := range set {
 			if batchCounter >= batchSize {
-				for j := 0; j < prevLayerSize; j++ {
-					for k := 0; k < currLayerSize; k++ {
-						n.synapses[j][k] += n.learningRate * correction[j][k] / float64(batchSize)
-					}
+				n.hiddenFirst.applyCorrections()
+				//for j := 0; j < prevLayerSize; j++ {
+					//for k := 0; k < currLayerSize; k++ {
+						//n.synapses[j][k] += n.learningRate * correction[j][k] / float64(batchSize)
+					//}
 				}
 
 				batchCounter = 0
-				costSum := 0.0
-				correction := make([][]float64, prevLayerSize)
-				for i := range correction {
-					correction[i] = make([]float64, currLayerSize)
-					costSum += batchCost[i]
-				}
-				costGradient = append(costGradient, costSum/float64(n.batchSize))
-				batchCost = []float64{}
+				//costSum := 0.0
+				//correction := make([][]float64, prevLayerSize)
+				//for i := range correction {
+					//correction[i] = make([]float64, currLayerSize)
+					//costSum += batchCost[i]
+				//}
+				//costGradient = append(costGradient, costSum/float64(n.batchSize))
+				//batchCost = []float64{}
 			}
 
-			prediction, hiddenOut := n.forward(v)
-			correction = n.backward(prediction, labels[i], hiddenOut, correction)
-			batchCost = append(batchCost, n.cost.countCost(prediction, labels[i]))
+			prediction := n.forward(v)
+			n.backward(prediction, labels)
+			// TODO: compute global cost of the network, possibly per layer
+			//prediction, hiddenOut := n.forward(v)
+
+			//correction = n.backward(prediction, labels[i], hiddenOut, correction)
+			//batchCost = append(batchCost, n.cost.countCost(prediction, labels[i]))
 
 			batchCounter++
 		}
 	}
 	return
+}
+
+func (n *Perceptron) forward(rowInput []float64) ([]float64, [][]float64) {
+	// NOTE: this is a single layer implementation
+	n.output.forward(
+		n.hiddenFirst.forward(
+			n.input.forward(rowInput),
+		),
+	)
+	return []float64{}, [][]float64{}
 }
 
 func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {

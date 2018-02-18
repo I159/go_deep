@@ -25,8 +25,8 @@ type hiddenLayer interface {
 type outputLayer interface {
 	activation
 	cost
-	forward(rowInput [][]float64) ([]float64)
-	backward(arg) return_val
+	forward(rowInput [][]float64) []float64
+	backward(labels []float64) [][]float64
 }
 
 type inputDense struct {}
@@ -87,10 +87,12 @@ func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
 
 
 type outputDense struct {
-	out	[][]float64
+	prevLayerSize int
+	input [][]float64
 }
 
-func (l *outputDense) forward(rowInput [][]float64) (output []float64)
+func (l *outputDense) forward(rowInput [][]float64) (output []float64) {
+	l.out = rowInput
 	var iSum float64
 
 	for _, raw := range rowInput {
@@ -103,6 +105,22 @@ func (l *outputDense) forward(rowInput [][]float64) (output []float64)
 	return
 }
 
-func (n *outputDense) backward() error {
-	// Backward propagation between output and hidden layer
+func (l *outputDense) backward(prediction [][]float64, labels []float64) (corrections [][]float64) {
+	var cost, zk float64
+
+	for i, ak := range prediction {
+		zk = 0
+		for _, aj := range l.input[i] {
+			zk += aj // Sum current layer input
+		}
+		// Delta rule
+		cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
+		for k := 0; k < l.prevLayerSize; k++ {
+			// Corrections vector of the same shape as synapses vector
+			correction[k][i] = cost * prediction[i][k]
+		}
+		// Add bias correction
+		correction[l.prevLayerSize][i] = cost
+	}
+	return
 }

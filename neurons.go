@@ -7,9 +7,10 @@ type inputLayer interface {
 type firstHiddenLayer interface {
 	activation
 	cost
-	forward(float64) [][]float64
-	backward([][]float64)
 	init()
+	forward(float64) [][]float64
+	forwardMeasure([]float64, []float64) ([][]float64, float64)
+	backward([][]float64)
 	applyCorrection(float64)
 }
 
@@ -26,6 +27,7 @@ type outputLayer interface {
 	activation
 	cost
 	forward(rowInput [][]float64) []float64
+	forwardMeasure([]float64, []float64) ([][]float64, float64)
 	backward(labels []float64) [][]float64
 }
 
@@ -69,6 +71,12 @@ func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 	return output
 }
 
+func (l *outputDenseFirst) forwarsMeasure(rowInput [][]float64, labels []float64) (prediction []float64, cost float64) {
+	prediction = l.forward(rowInput)
+	cost = l.countCost(prediction, labels)
+	return
+}
+
 func (l *hiddenDenseFirst) backward(corrections [][]float64) {
 	for i, corr := range corrections {
 		for j, c := range corr {
@@ -104,6 +112,13 @@ func (l *outputDense) forward(rowInput [][]float64) (output []float64) {
 	}
 	return
 }
+
+func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (prediction []float64, cost float64) {
+	prediction = l.forward(rowInput)
+	cost = l.countCost(prediction, labels)
+	return
+}
+
 
 func (l *outputDense) backward(prediction [][]float64, labels []float64) (corrections [][]float64) {
 	var cost, zk float64

@@ -102,11 +102,11 @@ func (n *Perceptron) backward(prediction [][]float64, labels []float64) {
 	//return correction
 }
 
-func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64) {
+func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient [][]float64) {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
 	var batchCounter int
-	var batchCost []float64
+	costGradient = make([][]float64, n.layersCount)
 
 	for j := 0; j <= epochs; j++ {
 		for i, v := range set {
@@ -129,8 +129,11 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 				//batchCost = []float64{}
 			}
 
-			prediction := n.forward(v)
-			n.backward(prediction, labels)
+			prediction, costs := n.forwardMeasure(v, labels[i])
+			for k, cost := range costs {
+				costGradient[k] = append(costGradient[k], cost)
+			}
+			n.backward(prediction, labels[i])
 			// TODO: compute global cost of the network, possibly per layer
 			//prediction, hiddenOut := n.forward(v)
 
@@ -143,15 +146,20 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 	return
 }
 
-func (n *Perceptron) forward(rowInput []float64) ([]float64, [][]float64) {
+func (n *Perceptron) forward(rowInput []float64) []float64 {
 	// NOTE: this is a single layer implementation
-	n.output.forward(
+	return n.output.forward(
 		n.hiddenFirst.forward(
 			n.input.forward(rowInput),
 		),
 	)
-	return []float64{}, [][]float64{}
 }
+
+func (n *Perceptron) forwardMeasure(rowInput, labels []float64) (prediction []float64, cost float64) {
+	// Get per layer prediction and cost with layers `forwardMeasure` methods
+	return
+}
+
 
 func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 	var pred []float64

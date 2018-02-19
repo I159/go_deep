@@ -2,8 +2,8 @@ package go_deep
 
 type Perceptron struct {
 	input       inputLayer
-	hiddenFirst hiddenFirstLayer
-	hidden      []hiddenLayer
+	hiddenFirst firstHiddenLayer
+	//hidden      []hiddenLayer
 	output      outputLayer
 	//activation
 	//cost
@@ -80,7 +80,7 @@ type Perceptron struct {
 
 func (n *Perceptron) backward(prediction [][]float64, labels []float64) {
 	n.hiddenFirst.backward(
-		n.output.backward(labels)
+		n.output.backward(labels),
 	)
 	//var cost, zk float64
 	//prevLayerSize := len(n.synapses) - 1
@@ -142,7 +142,6 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 
 			batchCounter++
 		}
-	}
 	return
 }
 

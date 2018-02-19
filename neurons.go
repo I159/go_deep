@@ -14,14 +14,14 @@ type firstHiddenLayer interface {
 	applyCorrection(float64)
 }
 
-type hiddenLayer interface {
-	activation
-	cost
-	forward(arg) return_val
-	backward(arg) return_val
-	init(arg) return_val
-	applyCorrection()
-}
+//type hiddenLayer interface {
+	//activation
+	//cost
+	//forward(arg) return_val
+	//backward(arg) return_val
+	//init(arg) return_val
+	//applyCorrection()
+//}
 
 type outputLayer interface {
 	activation
@@ -40,7 +40,7 @@ func (l *inputDense) farward(setItem []float64) (output float64) {
 	network and are together referred to as the “Input Layer”. No computation
 	is performed in any of the Input nodes – they just pass on the information to the hidden nodes.
 	*/
-	for _, i := range set {
+	for _, i := range setItem {
 		output += i
 	}
 	output *= .00001
@@ -48,7 +48,11 @@ func (l *inputDense) farward(setItem []float64) (output float64) {
 }
 
 type hiddenDenseFirst struct {
+	activation
+	cost
 	synapseInitializer
+	currLayerSize int
+	learningRate float64
 	corrections, synapses [][]float64
 }
 
@@ -59,10 +63,10 @@ func (l *hiddenDenseFirst) init() {
 func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 	// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
 	var j int
-	for i := range n.synapses[0] {
-		for j = 0; j < currLayerSize - 1; j++ {
+	for i := range l.synapses[0] {
+		for j = 0; j < l.currLayerSize - 1; j++ {
 			if output[i] == nil {
-				output[i] = make([]float64, currLayerSize)
+				output[i] = make([]float64, l.currLayerSize)
 			}
 			output[i][j] = l.synapses[j][i] * input
 		}
@@ -71,11 +75,7 @@ func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 	return output
 }
 
-func (l *outputDenseFirst) forwarsMeasure(rowInput [][]float64, labels []float64) (prediction []float64, cost float64) {
-	prediction = l.forward(rowInput)
-	cost = l.countCost(prediction, labels)
-	return
-}
+// TODO: find out how to measure hidden layer cost if it is possible and needed.
 
 func (l *hiddenDenseFirst) backward(corrections [][]float64) {
 	for i, corr := range corrections {
@@ -95,12 +95,14 @@ func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
 
 
 type outputDense struct {
+	activation
+	cost
 	prevLayerSize int
 	input [][]float64
 }
 
 func (l *outputDense) forward(rowInput [][]float64) (output []float64) {
-	l.out = rowInput
+	l.input = rowInput
 	var iSum float64
 
 	for _, raw := range rowInput {
@@ -120,7 +122,7 @@ func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (pr
 }
 
 
-func (l *outputDense) backward(prediction [][]float64, labels []float64) (corrections [][]float64) {
+func (l *outputDense) backward(prediction []float64, labels []float64) (corrections [][]float64) {
 	var cost, zk float64
 
 	for i, ak := range prediction {
@@ -129,13 +131,13 @@ func (l *outputDense) backward(prediction [][]float64, labels []float64) (correc
 			zk += aj // Sum current layer input
 		}
 		// Delta rule
-		cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
+		cost = l.costDerivative(ak, labels[i]) * l.actDerivative(zk)
 		for k := 0; k < l.prevLayerSize; k++ {
 			// Corrections vector of the same shape as synapses vector
-			correction[k][i] = cost * prediction[i][k]
+			corrections[k][i] = cost * l.input[i][k]
 		}
 		// Add bias correction
-		correction[l.prevLayerSize][i] = cost
+		corrections[l.prevLayerSize][i] = cost
 	}
 	return
 }

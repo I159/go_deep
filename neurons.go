@@ -11,7 +11,7 @@ type firstHiddenLayer interface {
 	forward(float64) [][]float64
 	forwardMeasure([]float64, []float64) ([][]float64, float64)
 	backward([][]float64)
-	applyCorrection(float64)
+	applyCorrections(float64)
 }
 
 //type hiddenLayer interface {
@@ -69,7 +69,7 @@ func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 	activated := l.activate(input)
 
 	for i := 0; i < l.nextLayerSize; i++ {
-		for j = 0; j < l.currLayerSize - 1; j++ {
+		for j := 0; j < l.currLayerSize - 1; j++ {
 			if output[i] == nil {
 				output[i] = make([]float64, l.currLayerSize)
 			}

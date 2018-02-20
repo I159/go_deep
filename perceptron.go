@@ -102,46 +102,24 @@ func (n *Perceptron) backward(prediction [][]float64, labels []float64) {
 	//return correction
 }
 
-func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient [][]float64) {
+func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64) {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
 	var batchCounter int
-	costGradient = make([][]float64, n.layersCount)
 
 	for j := 0; j <= epochs; j++ {
 		for i, v := range set {
 			if batchCounter >= batchSize {
-				n.hiddenFirst.applyCorrections()
-				//for j := 0; j < prevLayerSize; j++ {
-					//for k := 0; k < currLayerSize; k++ {
-						//n.synapses[j][k] += n.learningRate * correction[j][k] / float64(batchSize)
-					//}
-				}
-
+				n.hiddenFirst.applyCorrections(float64(batchSize))
 				batchCounter = 0
-				//costSum := 0.0
-				//correction := make([][]float64, prevLayerSize)
-				//for i := range correction {
-					//correction[i] = make([]float64, currLayerSize)
-					//costSum += batchCost[i]
-				//}
-				//costGradient = append(costGradient, costSum/float64(n.batchSize))
-				//batchCost = []float64{}
 			}
-
-			prediction, costs := n.forwardMeasure(v, labels[i])
-			for k, cost := range costs {
-				costGradient[k] = append(costGradient[k], cost)
-			}
+			prediction, cost := n.forwardMeasure(v, labels[i])
+			costGradient = append(costGradient, cost)
 			n.backward(prediction, labels[i])
-			// TODO: compute global cost of the network, possibly per layer
-			//prediction, hiddenOut := n.forward(v)
-
-			//correction = n.backward(prediction, labels[i], hiddenOut, correction)
-			//batchCost = append(batchCost, n.cost.countCost(prediction, labels[i]))
-
 			batchCounter++
+
 		}
+	}
 	return
 }
 

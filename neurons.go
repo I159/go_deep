@@ -13,32 +13,32 @@ type firstHiddenLayer interface {
 }
 
 //type hiddenLayer interface {
-	//activation
-	//cost
-	//forward(arg) return_val
+//activation
+//cost
+//forward(arg) return_val
 // TODO: compute actual correction with hidden layer Delata rule
 // https://theclevermachine.wordpress.com/2014/09/06/derivation-error-backpropagation-gradient-descent-for-neural-networks/
-	//backward(arg) return_val
-	//init(arg) return_val
-	//applyCorrection()
+//backward(arg) return_val
+//init(arg) return_val
+//applyCorrection()
 //}
 
 type outputLayer interface {
 	activation
 	cost
 	forward(rowInput [][]float64) []float64
-	forwardMeasure([]float64, []float64) ([][]float64, float64)
-	backward(labels []float64) [][]float64
+	forwardMeasure([][]float64, []float64) ([]float64, float64)
+	backward(prediction, labels []float64) [][]float64
 }
 
-type inputDense struct {}
+type inputDense struct{}
 
 // Optimize input layer and create firstHidden layer and extraHidden layer with different input vector shape
 func (l *inputDense) forward(setItem []float64) (output float64) {
 	/*
-	The Input nodes provide information from the outside world to the 
-	network and are together referred to as the “Input Layer”. No computation
-	is performed in any of the Input nodes – they just pass on the information to the hidden nodes.
+		The Input nodes provide information from the outside world to the
+		network and are together referred to as the “Input Layer”. No computation
+		is performed in any of the Input nodes – they just pass on the information to the hidden nodes.
 	*/
 	for _, i := range setItem {
 		output += i
@@ -52,8 +52,8 @@ type hiddenDenseFirst struct {
 	activation
 	synapseInitializer
 	prevLayerSize, currLayerSize, nextLayerSize int // Length of neurons sequence - 1
-	learningRate float64
-	corrections, synapses [][]float64
+	learningRate                                float64
+	corrections, synapses                       [][]float64
 }
 
 func (l *hiddenDenseFirst) init() {
@@ -68,7 +68,7 @@ func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 	activated := l.activate(input)
 
 	for i := 0; i < l.nextLayerSize; i++ {
-		for j := 0; j < l.currLayerSize - 1; j++ {
+		for j := 0; j < l.currLayerSize-1; j++ {
 			if output[i] == nil {
 				output[i] = make([]float64, l.currLayerSize)
 			}
@@ -105,25 +105,24 @@ func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
 
 func newFirstHidden(prev, curr, next int, learningRate float64, activation activation) firstHiddenLayer {
 	layer := &hiddenDenseFirst{
-		activation: activation,
+		activation:         activation,
 		synapseInitializer: &denseSynapses{},
-		prevLayerSize: prev,
-		currLayerSize: curr,
-		nextLayerSize: next,
-		learningRate: learningRate,
+		prevLayerSize:      prev,
+		currLayerSize:      curr,
+		nextLayerSize:      next,
+		learningRate:       learningRate,
 	}
 	layer.init()
 	return layer
 }
 
-
 //type hiddenLayer struct {
-	//actication 
-	//synapseInitializer
-	//currLayerSize, nextLayerSize int // Length of neurons sequence - 1
-	//learningRate float64
-	//input [][]float64
-	//corrections, synapses [][]float64
+//actication
+//synapseInitializer
+//currLayerSize, nextLayerSize int // Length of neurons sequence - 1
+//learningRate float64
+//input [][]float64
+//corrections, synapses [][]float64
 //}
 
 type outputDense struct {
@@ -132,7 +131,8 @@ type outputDense struct {
 	// as a sum of wighted errors. Thus cost function is global for a network.
 	cost
 	prevLayerSize int
-	input [][]float64
+	currLayerSize int
+	input         [][]float64
 }
 
 func (l *outputDense) forward(rowInput [][]float64) (output []float64) {
@@ -155,7 +155,6 @@ func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (pr
 	return
 }
 
-
 func (l *outputDense) backward(prediction []float64, labels []float64) (corrections [][]float64) {
 	var cost, zk float64
 
@@ -174,4 +173,13 @@ func (l *outputDense) backward(prediction []float64, labels []float64) (correcti
 		corrections[l.prevLayerSize][i] = cost
 	}
 	return
+}
+
+func newOutput(prev, curr int, activation activation, cost cost) outputLayer {
+	return &outputDense{
+		activation: activation,
+		cost: cost,
+		prevLayerSize: prev,
+		currLayerSize: curr,
+	}
 }

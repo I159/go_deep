@@ -34,7 +34,7 @@ func (s *denseSynapses) randomInit() {
 
 func (s *denseSynapses) nguyenWiderow() {
 	var norm float64
-	beta := SCALING_BASE * math.Pow(s.curr, 1.0/s.prev)
+	beta := SCALING_BASE * math.Pow(float64(s.curr), 1.0/float64(s.prev))
 
 	for _, i := range s.synapses {
 		norm = 0

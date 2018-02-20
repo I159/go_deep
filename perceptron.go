@@ -4,31 +4,31 @@ type Perceptron struct {
 	input       inputLayer
 	hiddenFirst firstHiddenLayer
 	//hidden      []hiddenLayer
-	output      outputLayer
+	output outputLayer
 	//learningRate float64
 	//synapses     [][]float64
 }
 
 // TODO: deprecated.
 //func (n *Perceptron) inputLayer(set []float64) (output [][]float64) {
-	//// Each neuron of a first hidden layer receives all signals from input layer
-	//// and sums it. Input layer doesn't change input signal
-	//var iSum float64
+//// Each neuron of a first hidden layer receives all signals from input layer
+//// and sums it. Input layer doesn't change input signal
+//var iSum float64
 
-	//for _, i := range set {
-		//iSum += i
-	//}
+//for _, i := range set {
+//iSum += i
+//}
 
-	//iSum *= .00001
+//iSum *= .00001
 
-	//nextLayerSize := len(n.synapses[0])
-	//for i := range n.synapses {
-		//output = append(output, make([]float64, nextLayerSize))
-		//for _ = range n.synapses[i] {
-			//output[i] = append(output[i], iSum)
-		//}
-	//}
-	//return
+//nextLayerSize := len(n.synapses[0])
+//for i := range n.synapses {
+//output = append(output, make([]float64, nextLayerSize))
+//for _ = range n.synapses[i] {
+//output[i] = append(output[i], iSum)
+//}
+//}
+//return
 //}
 
 //func (n *Perceptron) hiddenForward(rowInput [][]float64) ([][]float64, [][]float64) {
@@ -78,24 +78,24 @@ type Perceptron struct {
 
 func (n *Perceptron) backward(prediction []float64, labels []float64) {
 	n.hiddenFirst.backward(
-		n.output.backward(labels),
+		n.output.backward(prediction, labels),
 	)
 	//var cost, zk float64
 	//prevLayerSize := len(n.synapses) - 1
 
 	//for i, ak := range currLayerOut {
-		//zk = 0
-		//for _, aj := range prevLayerOut[i] {
-			//zk += aj // Sum current layer input
-		//}
-		//// Delta rule
-		//cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
-		//for k := 0; k < prevLayerSize; k++ {
-			//// Corrections vector of the same shape as synapses vector
-			//correction[k][i] += cost * prevLayerOut[i][k]
-		//}
-		//// Add bias correction
-		//correction[prevLayerSize][i] += cost
+	//zk = 0
+	//for _, aj := range prevLayerOut[i] {
+	//zk += aj // Sum current layer input
+	//}
+	//// Delta rule
+	//cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
+	//for k := 0; k < prevLayerSize; k++ {
+	//// Corrections vector of the same shape as synapses vector
+	//correction[k][i] += cost * prevLayerOut[i][k]
+	//}
+	//// Add bias correction
+	//correction[prevLayerSize][i] += cost
 	//}
 	//return correction
 }
@@ -135,7 +135,6 @@ func (n *Perceptron) forwardMeasure(rowInput, labels []float64) (prediction []fl
 	return
 }
 
-
 func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 	var pred []float64
 
@@ -147,25 +146,25 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 }
 
 type Shape struct {
-	InputSize int
-	HiddenSizes []int // TODO: use it in multilayer
-	OutputSize int
+	InputSize           int
+	HiddenSizes         []int // TODO: use it in multilayer
+	OutputSize          int
 	HiddenLearningRates []float64
-	HiddenActivations []activation
-	OutputActivation activation
-	Cost cost
+	HiddenActivations   []activation
+	OutputActivation    activation
+	Cost                cost
 }
 
 func NewPerceptron(shape Shape) network {
 	return &Perceptron{
 		input: &inputDense{},
-		firstHidden: newFirstHidden(
+		hiddenFirst: newFirstHidden(
 			shape.InputSize,
 			shape.HiddenSizes[0],
 			shape.OutputSize,
 			shape.HiddenLearningRates[0],
 			shape.HiddenActivations[0],
 		),
-		output: newOutput(shape.HiddenSizes[0], shape.OutputSize, Cost, shape.OutputActivation),
+		output: newOutput(shape.HiddenSizes[0], shape.OutputSize, shape.OutputActivation, shape.Cost),
 	}
 }

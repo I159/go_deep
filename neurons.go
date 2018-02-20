@@ -43,6 +43,7 @@ func (l *inputDense) farward(setItem []float64) (output float64) {
 	for _, i := range setItem {
 		output += i
 	}
+	// TODO: don't do so in nn, prepare data outside. Raise an error instead if sum of signals is InF
 	output *= .00001
 	return
 }
@@ -51,7 +52,7 @@ type hiddenDenseFirst struct {
 	activation
 	cost
 	synapseInitializer
-	currLayerSize int
+	currLayerSize, nextLayerSize int // Length of neurons sequence - 1
 	learningRate float64
 	corrections, synapses [][]float64
 }
@@ -61,21 +62,24 @@ func (l *hiddenDenseFirst) init() {
 }
 
 func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
-	// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
-	var j int
-	for i := range l.synapses[0] {
+	// Each neuron of a first hidden layer receives a sum of all input signals from an input later and activates it.
+	// Computation of first hidden layer cost value has no sense because before multiplication of activated sum on
+	// synapses all neurons have the same value - activated sum of incoming signal. It is true because input layer
+	// has no weights.
+	activated := l.activate(input)
+
+	for i := 0; i < l.nextLayerSize; i++ {
 		for j = 0; j < l.currLayerSize - 1; j++ {
 			if output[i] == nil {
 				output[i] = make([]float64, l.currLayerSize)
 			}
-			output[i][j] = l.synapses[j][i] * input
+			// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
+			output[i][j] = l.synapses[j][i] * activated
 		}
-		output[i][j+1] += l.synapses[j+1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
+		output[i][l.currLayerSize] = l.synapses[l.currLayerSize][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
 	}
 	return output
 }
-
-// TODO: find out how to measure hidden layer cost if it is possible and needed.
 
 func (l *hiddenDenseFirst) backward(corrections [][]float64) {
 	for i, corr := range corrections {

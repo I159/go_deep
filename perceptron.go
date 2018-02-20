@@ -1,8 +1,6 @@
 package go_deep
 
 type Perceptron struct {
-	activation
-	cost
 	input       inputLayer
 	hiddenFirst firstHiddenLayer
 	//hidden      []hiddenLayer
@@ -148,18 +146,12 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 	return
 }
 
-func NewPerceptron(
-	learningRate float64,
-	activation activation,
-	cost cost,
-	input,
-	hidden,
-	output float64) network {
+func NewPerceptron() network {
 
 	return &Perceptron{
 		activation:   activation,
 		cost:         cost,
-		learningRate: learningRate,
-		synapses:     newDenseSynapses(hidden, input, output),
+		//learningRate: learningRate,
+		//synapses:     newDenseSynapses(hidden, input, output),
 	}
 }

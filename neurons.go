@@ -18,6 +18,8 @@ type firstHiddenLayer interface {
 	//activation
 	//cost
 	//forward(arg) return_val
+// TODO: compute actual correction with hidden layer Delata rule
+// https://theclevermachine.wordpress.com/2014/09/06/derivation-error-backpropagation-gradient-descent-for-neural-networks/
 	//backward(arg) return_val
 	//init(arg) return_val
 	//applyCorrection()
@@ -50,7 +52,6 @@ func (l *inputDense) farward(setItem []float64) (output float64) {
 
 type hiddenDenseFirst struct {
 	activation
-	cost
 	synapseInitializer
 	currLayerSize, nextLayerSize int // Length of neurons sequence - 1
 	learningRate float64
@@ -81,9 +82,16 @@ func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 	return output
 }
 
-func (l *hiddenDenseFirst) backward(corrections [][]float64) {
-	for i, corr := range corrections {
-		for j, c := range corr {
+// A high-grade i.e. extra hidden layer collects corrections (incoming errors)
+// then sum per neuron incoming errors (alongside) and computes errors for
+// a next hidden layer.
+// First hidden layer doesn't have a previous hidden layer so it doesn't compute
+// errors (corrections) for synapses between previous layer and an actual one.
+// Instead of it, it is just collects errors for correction synapses between itself
+// and a next layer (possibly) output.
+func (l *hiddenDenseFirst) backward(eRRors [][]float64) {
+	for i, eRR := range eRRors {
+		for j, c := range eRR {
 			l.corrections[i][j] += c
 		}
 	}
@@ -100,6 +108,8 @@ func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
 
 type outputDense struct {
 	activation
+	// Cost function exists only in output layer and in hidden layers used indirectly
+	// as a sum of wighted errors. Thus cost function is global for a network.
 	cost
 	prevLayerSize int
 	input [][]float64

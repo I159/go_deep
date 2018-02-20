@@ -1,12 +1,12 @@
 package go_deep
 
 type Perceptron struct {
+	activation
+	cost
 	input       inputLayer
 	hiddenFirst firstHiddenLayer
 	//hidden      []hiddenLayer
 	output      outputLayer
-	//activation
-	//cost
 	//learningRate float64
 	//synapses     [][]float64
 }
@@ -78,7 +78,7 @@ type Perceptron struct {
 //return output, rowInput
 //}
 
-func (n *Perceptron) backward(prediction [][]float64, labels []float64) {
+func (n *Perceptron) backward(prediction []float64, labels []float64) {
 	n.hiddenFirst.backward(
 		n.output.backward(labels),
 	)
@@ -142,7 +142,7 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 	var pred []float64
 
 	for _, v := range set {
-		pred, _ = n.forward(v)
+		pred = n.forward(v)
 		prediction = append(prediction, pred)
 	}
 	return

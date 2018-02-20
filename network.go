@@ -1,11 +1,10 @@
 package go_deep
 
 type backwardPropagation interface {
-	forward(set []float64) (output []float64, hiddenOut [][]float64)
-	backward(out, labels []float64, hiddenOut, correction [][]float64) [][]float64
+	forward(set []float64) (output []float64)
+	backward(prediction, labels []float64)
 }
 
-// TODO: decompose the interface
 type network interface {
 	activation
 	cost

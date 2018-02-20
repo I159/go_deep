@@ -6,10 +6,8 @@ type inputLayer interface {
 
 type firstHiddenLayer interface {
 	activation
-	cost
 	init()
 	forward(float64) [][]float64
-	forwardMeasure([]float64, []float64) ([][]float64, float64)
 	backward([][]float64)
 	applyCorrections(float64)
 }
@@ -36,7 +34,7 @@ type outputLayer interface {
 type inputDense struct {}
 
 // Optimize input layer and create firstHidden layer and extraHidden layer with different input vector shape
-func (l *inputDense) farward(setItem []float64) (output float64) {
+func (l *inputDense) forward(setItem []float64) (output float64) {
 	/*
 	The Input nodes provide information from the outside world to the 
 	network and are together referred to as the “Input Layer”. No computation
@@ -53,7 +51,7 @@ func (l *inputDense) farward(setItem []float64) (output float64) {
 type hiddenDenseFirst struct {
 	activation
 	synapseInitializer
-	currLayerSize, nextLayerSize int // Length of neurons sequence - 1
+	prevLayerSize, currLayerSize, nextLayerSize int // Length of neurons sequence - 1
 	learningRate float64
 	corrections, synapses [][]float64
 }
@@ -105,6 +103,28 @@ func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
 	}
 }
 
+func newFirstHidden(prev, curr, next int, learningRate float64, activation activation) firstHiddenLayer {
+	layer := &hiddenDenseFirst{
+		activation: activation,
+		synapseInitializer: &denseSynapses{},
+		prevLayerSize: prev,
+		currLayerSize: curr,
+		nextLayerSize: next,
+		learningRate: learningRate,
+	}
+	layer.init()
+	return layer
+}
+
+
+//type hiddenLayer struct {
+	//actication 
+	//synapseInitializer
+	//currLayerSize, nextLayerSize int // Length of neurons sequence - 1
+	//learningRate float64
+	//input [][]float64
+	//corrections, synapses [][]float64
+//}
 
 type outputDense struct {
 	activation

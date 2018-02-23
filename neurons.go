@@ -76,7 +76,7 @@ func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 			// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
 			output[i][j] = l.synapses[j][i] * activated
 		}
-		output[i][l.currLayerSize] = l.synapses[l.currLayerSize][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
+		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
 	}
 	return output
 }

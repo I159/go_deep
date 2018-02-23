@@ -5,99 +5,12 @@ type Perceptron struct {
 	hiddenFirst firstHiddenLayer
 	//hidden      []hiddenLayer
 	output outputLayer
-	//learningRate float64
-	//synapses     [][]float64
 }
-
-// TODO: deprecated.
-//func (n *Perceptron) inputLayer(set []float64) (output [][]float64) {
-//// Each neuron of a first hidden layer receives all signals from input layer
-//// and sums it. Input layer doesn't change input signal
-//var iSum float64
-
-//for _, i := range set {
-//iSum += i
-//}
-
-//iSum *= .00001
-
-//nextLayerSize := len(n.synapses[0])
-//for i := range n.synapses {
-//output = append(output, make([]float64, nextLayerSize))
-//for _ = range n.synapses[i] {
-//output[i] = append(output[i], iSum)
-//}
-//}
-//return
-//}
-
-//func (n *Perceptron) hiddenForward(rowInput [][]float64) ([][]float64, [][]float64) {
-//var iSum float64
-//var input []float64
-//currLayerSize := len(n.synapses)
-//output := make([][]float64, len(n.synapses[0]))
-
-//for _, raw := range rowInput {
-//for _, item := range raw {
-//iSum += item
-//}
-//input = append(input, n.activate(iSum))
-//}
-
-//// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
-//var j int
-//for i := range n.synapses[0] {
-//for j = 0; j < currLayerSize-1; j++ {
-//if output[i] == nil {
-//output[i] = make([]float64, currLayerSize)
-//}
-//output[i][j] = n.synapses[j][i] * input[j]
-//}
-//output[i][j+1] += n.synapses[j+1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
-//}
-
-//// Keep layer input for backward propagation
-//return output, rowInput
-//}
-
-//func (n *Perceptron) outputForward(rowInput [][]float64) ([]float64, [][]float64) {
-//var output []float64
-//var iSum float64
-
-//for _, raw := range rowInput {
-//iSum = 0
-//for _, item := range raw {
-//iSum += item
-//}
-//output = append(output, n.activate(iSum))
-//}
-
-//// Keep a layer input for backward propagation
-//return output, rowInput
-//}
 
 func (n *Perceptron) backward(prediction []float64, labels []float64) {
 	n.hiddenFirst.backward(
 		n.output.backward(prediction, labels),
 	)
-	//var cost, zk float64
-	//prevLayerSize := len(n.synapses) - 1
-
-	//for i, ak := range currLayerOut {
-	//zk = 0
-	//for _, aj := range prevLayerOut[i] {
-	//zk += aj // Sum current layer input
-	//}
-	//// Delta rule
-	//cost = n.cost.costDerivative(ak, labels[i]) * n.activation.actDerivative(zk)
-	//for k := 0; k < prevLayerSize; k++ {
-	//// Corrections vector of the same shape as synapses vector
-	//correction[k][i] += cost * prevLayerOut[i][k]
-	//}
-	//// Add bias correction
-	//correction[prevLayerSize][i] += cost
-	//}
-	//return correction
 }
 
 func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64) {
@@ -131,8 +44,10 @@ func (n *Perceptron) forward(rowInput []float64) []float64 {
 }
 
 func (n *Perceptron) forwardMeasure(rowInput, labels []float64) (prediction []float64, cost float64) {
-	// Get per layer prediction and cost with layers `forwardMeasure` methods
-	return
+	res := n.hiddenFirst.forward(
+		n.input.forward(rowInput),
+	)
+	return n.output.forwardMeasure(res, labels)
 }
 
 func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {

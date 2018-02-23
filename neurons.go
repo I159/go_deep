@@ -65,6 +65,7 @@ func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 	// Computation of first hidden layer cost value has no sense because before multiplication of activated sum on
 	// synapses all neurons have the same value - activated sum of incoming signal. It is true because input layer
 	// has no weights.
+	output = make([][]float64, l.nextLayerSize)
 	activated := l.activate(input)
 
 	for i := 0; i < l.nextLayerSize; i++ {
@@ -106,7 +107,11 @@ func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
 func newFirstHidden(prev, curr, next int, learningRate float64, activation Activation) firstHiddenLayer {
 	layer := &hiddenDenseFirst{
 		Activation:         activation,
-		synapseInitializer: &denseSynapses{},
+		synapseInitializer: &denseSynapses{
+			prev: prev,
+			curr: curr,
+			next: next,
+		},
 		prevLayerSize:      prev,
 		currLayerSize:      curr,
 		nextLayerSize:      next,

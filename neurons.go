@@ -5,7 +5,7 @@ type inputLayer interface {
 }
 
 type firstHiddenLayer interface {
-	activation
+	Activation
 	init()
 	forward(float64) [][]float64
 	backward([][]float64)
@@ -24,7 +24,7 @@ type firstHiddenLayer interface {
 //}
 
 type outputLayer interface {
-	activation
+	Activation
 	cost
 	forward(rowInput [][]float64) []float64
 	forwardMeasure([][]float64, []float64) ([]float64, float64)
@@ -49,7 +49,7 @@ func (l *inputDense) forward(setItem []float64) (output float64) {
 }
 
 type hiddenDenseFirst struct {
-	activation
+	Activation
 	synapseInitializer
 	prevLayerSize, currLayerSize, nextLayerSize int // Length of neurons sequence - 1
 	learningRate                                float64
@@ -103,9 +103,9 @@ func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
 	}
 }
 
-func newFirstHidden(prev, curr, next int, learningRate float64, activation activation) firstHiddenLayer {
+func newFirstHidden(prev, curr, next int, learningRate float64, activation Activation) firstHiddenLayer {
 	layer := &hiddenDenseFirst{
-		activation:         activation,
+		Activation:         activation,
 		synapseInitializer: &denseSynapses{},
 		prevLayerSize:      prev,
 		currLayerSize:      curr,
@@ -126,7 +126,7 @@ func newFirstHidden(prev, curr, next int, learningRate float64, activation activ
 //}
 
 type outputDense struct {
-	activation
+	Activation
 	// Cost function exists only in output layer and in hidden layers used indirectly
 	// as a sum of wighted errors. Thus cost function is global for a network.
 	cost
@@ -175,9 +175,9 @@ func (l *outputDense) backward(prediction []float64, labels []float64) (correcti
 	return
 }
 
-func newOutput(prev, curr int, activation activation, cost cost) outputLayer {
+func newOutput(prev, curr int, activation Activation, cost cost) outputLayer {
 	return &outputDense{
-		activation: activation,
+		Activation: activation,
 		cost: cost,
 		prevLayerSize: prev,
 		currLayerSize: curr,

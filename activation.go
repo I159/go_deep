@@ -2,7 +2,7 @@ package go_deep
 
 import "math"
 
-type activation interface {
+type Activation interface {
 	activate(float64) float64
 	actDerivative(float64) float64
 }

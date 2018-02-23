@@ -150,8 +150,8 @@ type Shape struct {
 	HiddenSizes         []int // TODO: use it in multilayer
 	OutputSize          int
 	HiddenLearningRates []float64
-	HiddenActivations   []activation
-	OutputActivation    activation
+	HiddenActivations   []Activation
+	OutputActivation    Activation
 	Cost                cost
 }
 

@@ -133,7 +133,7 @@ func newFirstHidden(prev, curr, next int, learningRate float64, activation Activ
 type outputDense struct {
 	Activation
 	// Cost function exists only in output layer and in hidden layers used indirectly
-	// as a sum of wighted errors. Thus cost function is global for a network.
+	// as a sum of weighted errors. Thus cost function is global for a network.
 	cost
 	prevLayerSize int
 	currLayerSize int
@@ -162,6 +162,7 @@ func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (pr
 
 func (l *outputDense) backward(prediction []float64, labels []float64) (corrections [][]float64) {
 	var cost, zk float64
+	corrections = make([][]float64, l.prevLayerSize)
 
 	for i, ak := range prediction {
 		zk = 0
@@ -172,7 +173,7 @@ func (l *outputDense) backward(prediction []float64, labels []float64) (correcti
 		cost = l.costDerivative(ak, labels[i]) * l.actDerivative(zk)
 		for k := 0; k < l.prevLayerSize; k++ {
 			// Corrections vector of the same shape as synapses vector
-			corrections[k][i] = cost * l.input[i][k]
+			corrections[k] = append(corrections[k], cost*l.input[i][k])
 		}
 		// Add bias correction
 		corrections[l.prevLayerSize][i] = cost

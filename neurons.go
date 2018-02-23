@@ -106,16 +106,16 @@ func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
 
 func newFirstHidden(prev, curr, next int, learningRate float64, activation Activation) firstHiddenLayer {
 	layer := &hiddenDenseFirst{
-		Activation:         activation,
+		Activation: activation,
 		synapseInitializer: &denseSynapses{
 			prev: prev,
 			curr: curr,
 			next: next,
 		},
-		prevLayerSize:      prev,
-		currLayerSize:      curr,
-		nextLayerSize:      next,
-		learningRate:       learningRate,
+		prevLayerSize: prev,
+		currLayerSize: curr,
+		nextLayerSize: next,
+		learningRate:  learningRate,
 	}
 	layer.init()
 	return layer
@@ -182,8 +182,8 @@ func (l *outputDense) backward(prediction []float64, labels []float64) (correcti
 
 func newOutput(prev, curr int, activation Activation, cost cost) outputLayer {
 	return &outputDense{
-		Activation: activation,
-		cost: cost,
+		Activation:    activation,
+		cost:          cost,
 		prevLayerSize: prev,
 		currLayerSize: curr,
 	}

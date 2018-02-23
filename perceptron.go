@@ -71,17 +71,15 @@ type Shape struct {
 }
 
 func NewPerceptron(shape Shape) network {
-	hiddenLayer := newFirstHidden(
-		shape.InputSize,
-		shape.HiddenSizes[0],
-		shape.OutputSize,
-		shape.HiddenLearningRates[0],
-		shape.HiddenActivations[0],
-	)
-	hiddenLayer.init()
 	return &Perceptron{
-		input:       &inputDense{},
-		hiddenFirst: hiddenLayer,
-		output:      newOutput(shape.HiddenSizes[0], shape.OutputSize, shape.OutputActivation, shape.Cost),
+		input: &inputDense{},
+		hiddenFirst: newFirstHidden(
+			shape.InputSize,
+			shape.HiddenSizes[0],
+			shape.OutputSize,
+			shape.HiddenLearningRates[0],
+			shape.HiddenActivations[0],
+		),
+		output: newOutput(shape.HiddenSizes[0], shape.OutputSize, shape.OutputActivation, shape.Cost),
 	}
 }

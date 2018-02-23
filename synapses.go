@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	BIAS = 0.25
+	BIAS         = 0.25
 	SCALING_BASE = .7
 )
 
@@ -16,10 +16,10 @@ type synapseInitializer interface {
 }
 
 type denseSynapses struct {
-	prev int
-	curr int
-	next int
-	synapses [][]float64 
+	prev     int
+	curr     int
+	next     int
+	synapses [][]float64
 }
 
 func (s *denseSynapses) randomInit() {

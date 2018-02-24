@@ -89,7 +89,15 @@ func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
 // Instead of it, it is just collects errors for correction synapses between itself
 // and a next layer (possibly) output.
 func (l *hiddenDenseFirst) backward(eRRors [][]float64) {
+	if l.corrections == nil {
+		l.corrections = make([][]float64, l.currLayerSize)
+	}
+
 	for i, eRR := range eRRors {
+		if l.corrections[i] == nil {
+			l.corrections[i] = make([]float64, l.nextLayerSize)
+		}
+
 		for j, c := range eRR {
 			l.corrections[i][j] += c
 		}
@@ -170,7 +178,7 @@ func (l *outputDense) backward(prediction []float64, labels []float64) (correcti
 		}
 		// Delta rule
 		cost = l.costDerivative(ak, labels[i]) * l.actDerivative(zk)
-		for k := 0; k < l.prevLayerSize; k++ {
+		for k := 0; k < l.prevLayerSize-1; k++ {
 			// Corrections vector of the same shape as synapses vector
 			corrections[k] = append(corrections[k], cost*l.input[i][k])
 		}

@@ -7,28 +7,36 @@ import (
 )
 
 const (
-	BIAS = 0.25
+	BIAS         = 0.25
 	SCALING_BASE = .7
 )
 
-func randomInit(hidden, output int) (synapses [][]float64) {
-	rand.Seed(time.Now().UTC().UnixNano())
-	for i := 0; i < hidden; i++ {
-		synapses = append(synapses, []float64{})
-		for j := 0; j < output; j++ {
-			synapses[i] = append(synapses[i], rand.Float64()-0.5)
-		}
-	}
-	return
+type synapseInitializer interface {
+	init() [][]float64
 }
 
-func nguyenWiderow(hidden, input, output float64) [][]float64 {
-	synapses := randomInit(int(hidden), int(output))
+type denseSynapses struct {
+	prev     int
+	curr     int
+	next     int
+	synapses [][]float64
+}
 
+func (s *denseSynapses) randomInit() {
+	rand.Seed(time.Now().UTC().UnixNano())
+	for i := 0; i < s.curr-1; i++ {
+		s.synapses = append(s.synapses, []float64{})
+		for j := 0; j < s.next; j++ {
+			s.synapses[i] = append(s.synapses[i], rand.Float64()-0.5)
+		}
+	}
+}
+
+func (s *denseSynapses) nguyenWiderow() {
 	var norm float64
-	beta := SCALING_BASE * math.Pow(hidden, 1.0/input)
+	beta := SCALING_BASE * math.Pow(float64(s.curr), 1.0/float64(s.prev))
 
-	for _, i := range synapses {
+	for _, i := range s.synapses {
 		norm = 0
 		for _, j := range i {
 			norm += j * j
@@ -38,21 +46,19 @@ func nguyenWiderow(hidden, input, output float64) [][]float64 {
 			i[j] = (k * beta) / norm
 		}
 	}
-	return synapses
 }
 
-func addBiases(synapses [][]float64) {
-	nextLayerSize := len(synapses[0])
-	currentLayerSize := len(synapses)
-
-	synapses = append(synapses, make([]float64, nextLayerSize))
-	for i := 0; i < nextLayerSize; i++ {
-		synapses[currentLayerSize][i] = BIAS
+func (s *denseSynapses) addBiases() {
+	biasSignal := make([]float64, s.next)
+	for i := range biasSignal {
+		biasSignal[i] = BIAS
 	}
+	s.synapses = append(s.synapses, biasSignal)
 }
 
-func newDenseSynapses (hidden, input, output float64) [][]float64 {
-	synapses := nguyenWiderow(hidden, input, output)
-	addBiases(synapses)
-	return synapses
+func (s *denseSynapses) init() [][]float64 {
+	s.randomInit()
+	s.nguyenWiderow()
+	s.addBiases()
+	return s.synapses
 }

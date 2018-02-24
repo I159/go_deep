@@ -124,7 +124,7 @@ func newFirstHidden(prev, curr, next int, learningRate float64, activation Activ
 //type hiddenLayer struct {
 //actication
 //synapseInitializer
-//currLayerSize, nextLayerSize int // Length of neurons sequence - 1
+//currLayerSize, nextLayerSize int
 //learningRate float64
 //input [][]float64
 //corrections, synapses [][]float64
@@ -136,7 +136,6 @@ type outputDense struct {
 	// as a sum of weighted errors. Thus cost function is global for a network.
 	cost
 	prevLayerSize int
-	currLayerSize int
 	input         [][]float64
 }
 
@@ -176,7 +175,7 @@ func (l *outputDense) backward(prediction []float64, labels []float64) (correcti
 			corrections[k] = append(corrections[k], cost*l.input[i][k])
 		}
 		// Add bias correction
-		corrections[l.prevLayerSize][i] = cost
+		corrections[l.prevLayerSize-1] = append(corrections[l.prevLayerSize-1], cost)
 	}
 	return
 }
@@ -186,6 +185,5 @@ func newOutput(prev, curr int, activation Activation, cost cost) outputLayer {
 		Activation:    activation,
 		cost:          cost,
 		prevLayerSize: prev,
-		currLayerSize: curr,
 	}
 }

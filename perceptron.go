@@ -17,18 +17,20 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
 	var batchCounter int
+	var localCost float64
 
 	for j := 0; j <= epochs; j++ {
 		for i, v := range set {
 			if batchCounter >= batchSize {
 				n.hiddenFirst.applyCorrections(float64(batchSize))
+				costGradient = append(costGradient, localCost/float64(batchSize))
 				batchCounter = 0
+				localCost = 0
 			}
 			prediction, cost := n.forwardMeasure(v, labels[i])
-			costGradient = append(costGradient, cost)
+			localCost += cost
 			n.backward(prediction, labels[i])
 			batchCounter++
-
 		}
 	}
 	return

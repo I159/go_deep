@@ -1,51 +1,69 @@
 package go_deep
 
 type inputLayer interface {
-	forward(setItem []float64) (output float64)
-}
-
-type firstHiddenLayer interface {
-	Activation
-	init()
-	forward(float64) [][]float64
+	synapseInitializer
+	forward([]float64) [][]float64
 	backward([][]float64)
 	applyCorrections(float64)
 }
 
-//type hiddenLayer interface {
-//activation
-//cost
-//forward(arg) return_val
-// TODO: compute actual correction with hidden layer Delata rule
-// https://theclevermachine.wordpress.com/2014/09/06/derivation-error-backpropagation-gradient-descent-for-neural-networks/
-//backward(arg) return_val
-//init(arg) return_val
-//applyCorrection()
-//}
+type hiddenLayer interface {
+	Activation
+	synapseInitializer
+	forward([][]float64) [][]float64
+	backward([][]float64) [][]float64
+	applyCorrections(float64)
+}
 
 type outputLayer interface {
 	Activation
 	cost
-	forward(rowInput [][]float64) []float64
 	forwardMeasure([][]float64, []float64) ([]float64, float64)
+	forward(rowInput [][]float64) []float64
 	backward(prediction, labels []float64) [][]float64
 }
 
-type inputDense struct{}
+type inputDense struct {
+	synapseInitializer
+	corrections, synapses        [][]float64
+	nextLayerSize, currLayerSize int
+	learningRate                 float64
+}
 
-// Optimize input layer and create firstHidden layer and extraHidden layer with different input vector shape
-func (l *inputDense) forward(setItem []float64) (output float64) {
-	/*
-		The Input nodes provide information from the outside world to the
-		network and are together referred to as the “Input Layer”. No computation
-		is performed in any of the Input nodes – they just pass on the information to the hidden nodes.
-	*/
-	for _, i := range setItem {
-		output += i
+func (l *inputDense) forward(input []float64) (output [][]float64) {
+	for i := 0; i < l.nextLayerSize; i++ {
+		for j, v := range input {
+			if output[i] == nil {
+				output[i] = make([]float64, l.currLayerSize)
+			}
+			output[i] = append(output[i], l.synapses[j][i]*v)
+		}
 	}
-	// TODO: don't do so in nn, prepare data outside. Raise an error instead if sum of signals is InF
-	output *= .00001
 	return
+}
+
+func (l *inputDense) backward(eRRors [][]float64) {
+	if l.corrections == nil {
+		l.corrections = make([][]float64, l.currLayerSize)
+	}
+
+	for i, eRR := range eRRors {
+		if l.corrections[i] == nil {
+			l.corrections[i] = make([]float64, l.nextLayerSize)
+		}
+
+		for j, c := range eRR {
+			l.corrections[i][j] += c
+		}
+	}
+}
+
+func (l *inputDense) applyCorrections(batchSize float64) {
+	for i, corr := range l.corrections {
+		for j, c := range corr {
+			l.synapses[i][j] += l.learningRate * c / batchSize
+		}
+	}
 }
 
 type hiddenDenseFirst struct {
@@ -54,6 +72,23 @@ type hiddenDenseFirst struct {
 	prevLayerSize, currLayerSize, nextLayerSize int // Length of neurons sequence - 1
 	learningRate                                float64
 	corrections, synapses                       [][]float64
+}
+
+func NewInputDense(curr, next int, learningRate float64) inputLayer {
+	layer := &inputDense{
+		Activation: activation,
+		synapseInitializer: &denseSynapses{
+			prev: 1, // There is no previous layer but incoming data is flat it means that
+			// input signal for a neuron of an input layer is not a sum but a single value
+			curr: curr,
+			next: next,
+		},
+		currLayerSize: curr,
+		nextLayerSize: next,
+		learningRate:  learningRate,
+	}
+	layer.init()
+	return layer
 }
 
 func (l *hiddenDenseFirst) init() {

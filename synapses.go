@@ -11,6 +11,7 @@ const (
 	SCALING_BASE = .7
 )
 
+// TODO: create a new type derived from slice of floats.
 type synapseInitializer interface {
 	init() [][]float64
 }

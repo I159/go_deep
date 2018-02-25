@@ -92,7 +92,8 @@ type hiddenDense struct {
 	synapseInitializer
 	prevLayerSize, currLayerSize, nextLayerSize int
 	learningRate                                float64
-	corrections, synapses                       [][]float64
+	corrections, fromSynapses, toSynapses       [][]float64 // TODO: synapses directed from a previous layer to the current one used at back propagation
+	// to compute error for correction of the "to" synapses
 }
 
 func (l *hiddenDense) init() {
@@ -118,7 +119,7 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
 				output[i] = make([]float64, l.currLayerSize)
 			}
 			// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
-			output[i][j] = l.synapses[j][i] * v
+			output[i][j] = l.fromSynapses[j][i] * v
 		}
 		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
 	}
@@ -137,6 +138,7 @@ func (l *hiddenDense) backward(eRRors [][]float64) {
 		}
 
 		for j, c := range eRR {
+			// TODO: implement complete backprop as follows https://theclevermachine.wordpress.com/2014/09/06/derivation-error-backpropagation-gradient-descent-for-neural-networks/
 			l.corrections[i][j] += c
 		}
 	}
@@ -150,7 +152,7 @@ func (l *hiddenDense) applyCorrections(batchSize float64) {
 	}
 }
 
-func newFirstHidden(prev, curr, next int, learningRate float64, activation Activation) firstHiddenLayer {
+func newHiddenDense(prev, curr, next int, learningRate float64, activation Activation) firstHiddenLayer {
 	layer := &hiddenDense{
 		Activation: activation,
 		synapseInitializer: &denseSynapses{

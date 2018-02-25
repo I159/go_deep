@@ -66,24 +66,17 @@ func (l *inputDense) applyCorrections(batchSize float64) {
 	}
 }
 
-func (l *inputDense) init() {
-	l.synapses = l.synapseInitializer.init()
-}
-
-func NewInputDense(curr, next int, learningRate float64) inputLayer {
+func NewInputDense(curr, next int, bias, learningRate float64) inputLayer {
 	layer := &inputDense{
 		Activation: activation,
-		synapseInitializer: &denseSynapses{
-			prev: 1, // There is no previous layer but incoming data is flat it means that
-			// input signal for a neuron of an input layer is not a sum but a single value
-			curr: curr,
-			next: next,
-		},
+		synapseInitializer: denseSynapses{},
 		currLayerSize: curr,
 		nextLayerSize: next,
 		learningRate:  learningRate,
 	}
-	layer.init()
+	// There is no previous layer but incoming data is flat it means that
+	// input signal for a neuron of an input layer is not a sum but a single value
+	layer.synapses = layer.init(1, curr, next, bias)
 	return layer
 }
 
@@ -94,10 +87,6 @@ type hiddenDense struct {
 	learningRate                                float64
 	corrections, fromSynapses, toSynapses       [][]float64 // TODO: synapses directed from a previous layer to the current one used at back propagation
 	// to compute error for correction of the "to" synapses
-}
-
-func (l *hiddenDense) init() {
-	l.synapses = l.synapseInitializer.init()
 }
 
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
@@ -152,20 +141,16 @@ func (l *hiddenDense) applyCorrections(batchSize float64) {
 	}
 }
 
-func newHiddenDense(prev, curr, next int, learningRate float64, activation Activation) firstHiddenLayer {
+func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation Activation) firstHiddenLayer {
 	layer := &hiddenDense{
 		Activation: activation,
-		synapseInitializer: &denseSynapses{
-			prev: prev,
-			curr: curr,
-			next: next,
-		},
+		synapseInitializer: &denseSynapses{},
 		prevLayerSize: prev,
 		currLayerSize: curr,
 		nextLayerSize: next,
 		learningRate:  learningRate,
 	}
-	layer.init()
+	layer.synapses = layer.init(prev, curr, next, bias)
 	return layer
 }
 

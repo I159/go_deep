@@ -28,9 +28,12 @@ type inputDense struct {
 	corrections, synapses        [][]float64
 	nextLayerSize, currLayerSize int
 	learningRate                 float64
+	input                        []float64
 }
 
 func (l *inputDense) forward(input []float64) (output [][]float64) {
+	l.input = input
+
 	for i := 0; i < l.nextLayerSize; i++ {
 		for j, v := range input {
 			if output[i] == nil {
@@ -42,18 +45,17 @@ func (l *inputDense) forward(input []float64) (output [][]float64) {
 	return
 }
 
-func (l *inputDense) backward(eRRors [][]float64) {
+func (l *inputDense) backward(eRRors []float64) {
 	if l.corrections == nil {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
 
-	for i, eRR := range eRRors {
+	for i, a := range l.input {
 		if l.corrections[i] == nil {
 			l.corrections[i] = make([]float64, l.nextLayerSize)
 		}
-
-		for j, c := range eRR {
-			l.corrections[i][j] += c
+		for j, eRR := range eRRors {
+			l.corrections[i][j] += eRR * a
 		}
 	}
 }
@@ -68,14 +70,15 @@ func (l *inputDense) applyCorrections(batchSize float64) {
 
 func NewInputDense(curr, next int, bias, learningRate float64) inputLayer {
 	layer := &inputDense{
-		Activation: activation,
+		Activation:         activation,
 		synapseInitializer: denseSynapses{},
-		currLayerSize: curr,
-		nextLayerSize: next,
-		learningRate:  learningRate,
+		currLayerSize:      curr,
+		nextLayerSize:      next,
+		learningRate:       learningRate,
 	}
-	// There is no previous layer but incoming data is flat it means that
+	// NOTE: There is no previous layer but incoming data is flat it means that
 	// input signal for a neuron of an input layer is not a sum but a single value
+	// TODO: kind of bad design. Kept there to have synapses as pure slices. Possibly should be refactored... Later...
 	layer.synapses = layer.init(1, curr, next, bias)
 	return layer
 }
@@ -85,8 +88,8 @@ type hiddenDense struct {
 	synapseInitializer
 	prevLayerSize, currLayerSize, nextLayerSize int
 	learningRate                                float64
-	corrections, fromSynapses, toSynapses       [][]float64 // TODO: synapses directed from a previous layer to the current one used at back propagation
-	// to compute error for correction of the "to" synapses
+	output, corrections, synapses               [][]float64
+	input                                       []float64
 }
 
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
@@ -99,6 +102,7 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
 		for _, j := range i {
 			inputSum += j
 		}
+		l.input = append(l.input, inputSum)
 		activated = append(activated, l.activate(inputSum))
 	}
 
@@ -108,29 +112,50 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
 				output[i] = make([]float64, l.currLayerSize)
 			}
 			// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
-			output[i][j] = l.fromSynapses[j][i] * v
+			output[i][j] = l.synapses[j][i] * v
 		}
 		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
 	}
 
+	l.output = output
 	return output
 }
 
-func (l *hiddenDense) backward(eRRors [][]float64) {
+// FIXME: errors from an output layer are needed to compute actual corrections at hidden layers.
+func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
+	// Collect corrections for further forward error propagation
 	if l.corrections == nil {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
 
-	for i, eRR := range eRRors {
+	for i := 0; i < l.currLayerSize; i++ {
 		if l.corrections[i] == nil {
 			l.corrections[i] = make([]float64, l.nextLayerSize)
 		}
-
-		for j, c := range eRR {
-			// TODO: implement complete backprop as follows https://theclevermachine.wordpress.com/2014/09/06/derivation-error-backpropagation-gradient-descent-for-neural-networks/
-			l.corrections[i][j] += c
+		for j := 0; j < l.nextLayerSize; j++ {
+			// TODO: check matrix reshape correctness
+			if i < l.currLayerSize-1 {
+				l.corrections[i][j] += eRRors[j] * l.output[j][i]
+			} else {
+				// Bias
+				l.corrections[i][j] += eRRors[j]
+			}
 		}
 	}
+
+	// Propagate backward
+	var weightedErrSum float64
+	for i, v := range l.input {
+		acDer := l.actDerivative(v)
+		weightedErrSum = 0
+
+		for j, k := range l.synapses[i] {
+			weightedErrSum += eRRors[j] * k
+		}
+		nextLayerErrors = append(nextLayerErrors, acDer*weightedErrSum)
+	}
+
+	return
 }
 
 func (l *hiddenDense) applyCorrections(batchSize float64) {
@@ -143,13 +168,14 @@ func (l *hiddenDense) applyCorrections(batchSize float64) {
 
 func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation Activation) firstHiddenLayer {
 	layer := &hiddenDense{
-		Activation: activation,
+		Activation:         activation,
 		synapseInitializer: &denseSynapses{},
-		prevLayerSize: prev,
-		currLayerSize: curr,
-		nextLayerSize: next,
-		learningRate:  learningRate,
+		prevLayerSize:      prev,
+		currLayerSize:      curr,
+		nextLayerSize:      next,
+		learningRate:       -learningRate,
 	}
+	// TODO: kind of bad design. Kept there to have synapses as pure slices. Possibly should be refactored... Later...
 	layer.synapses = layer.init(prev, curr, next, bias)
 	return layer
 }
@@ -158,13 +184,12 @@ type outputDense struct {
 	Activation
 	// Cost function exists only in output layer and in hidden layers used indirectly
 	// as a sum of weighted errors. Thus cost function is global for a network.
+	input []float64
 	cost
 	prevLayerSize int
-	input         [][]float64
 }
 
 func (l *outputDense) forward(rowInput [][]float64) (output []float64) {
-	l.input = rowInput
 	var iSum float64
 
 	for _, raw := range rowInput {
@@ -172,6 +197,8 @@ func (l *outputDense) forward(rowInput [][]float64) (output []float64) {
 		for _, item := range raw {
 			iSum += item
 		}
+
+		l.input = append(l.input, iSum)
 		output = append(output, l.activate(iSum))
 	}
 	return
@@ -183,23 +210,14 @@ func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (pr
 	return
 }
 
-func (l *outputDense) backward(prediction []float64, labels []float64) (corrections [][]float64) {
+func (l *outputDense) backward(prediction []float64, labels []float64) (corrections []float64) {
 	var cost, zk float64
 	corrections = make([][]float64, l.prevLayerSize)
 
 	for i, ak := range prediction {
-		zk = 0
-		for _, aj := range l.input[i] {
-			zk += aj // Sum current layer input
-		}
 		// Delta rule
-		cost = l.costDerivative(ak, labels[i]) * l.actDerivative(zk)
-		for k := 0; k < l.prevLayerSize-1; k++ {
-			// Corrections vector of the same shape as synapses vector
-			corrections[k] = append(corrections[k], cost*l.input[i][k])
-		}
-		// Add bias correction
-		corrections[l.prevLayerSize-1] = append(corrections[l.prevLayerSize-1], cost)
+		cost = l.costDerivative(ak, labels[i]) * l.actDerivative(l.input[i])
+		corrections = append(corrections, cost)
 	}
 	return
 }

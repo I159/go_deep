@@ -66,12 +66,8 @@ func (l *inputDense) applyCorrections(batchSize float64) {
 	}
 }
 
-type hiddenDenseFirst struct {
-	Activation
-	synapseInitializer
-	prevLayerSize, currLayerSize, nextLayerSize int // Length of neurons sequence - 1
-	learningRate                                float64
-	corrections, synapses                       [][]float64
+func (l *inputDense) init() {
+	l.synapses = l.synapseInitializer.init()
 }
 
 func NewInputDense(curr, next int, learningRate float64) inputLayer {
@@ -91,39 +87,46 @@ func NewInputDense(curr, next int, learningRate float64) inputLayer {
 	return layer
 }
 
-func (l *hiddenDenseFirst) init() {
+type hiddenDense struct {
+	Activation
+	synapseInitializer
+	prevLayerSize, currLayerSize, nextLayerSize int
+	learningRate                                float64
+	corrections, synapses                       [][]float64
+}
+
+func (l *hiddenDense) init() {
 	l.synapses = l.synapseInitializer.init()
 }
 
-func (l *hiddenDenseFirst) forward(input float64) (output [][]float64) {
-	// Each neuron of a first hidden layer receives a sum of all input signals from an input later and activates it.
-	// Computation of first hidden layer cost value has no sense because before multiplication of activated sum on
-	// synapses all neurons have the same value - activated sum of incoming signal. It is true because input layer
-	// has no weights.
+func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
+	var activated []float64
+	var inputSum float64
 	output = make([][]float64, l.nextLayerSize)
-	activated := l.activate(input)
+
+	for _, i := range input {
+		inputSum = 0
+		for _, j := range i {
+			inputSum += j
+		}
+		activated = append(activated, l.activate(inputSum))
+	}
 
 	for i := 0; i < l.nextLayerSize; i++ {
-		for j := 0; j < l.currLayerSize-1; j++ {
+		for j, v := range activated {
 			if output[i] == nil {
 				output[i] = make([]float64, l.currLayerSize)
 			}
 			// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
-			output[i][j] = l.synapses[j][i] * activated
+			output[i][j] = l.synapses[j][i] * v
 		}
 		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
 	}
+
 	return output
 }
 
-// A high-grade i.e. extra hidden layer collects corrections (incoming errors)
-// then sum per neuron incoming errors (alongside) and computes errors for
-// a next hidden layer.
-// First hidden layer doesn't have a previous hidden layer so it doesn't compute
-// errors (corrections) for synapses between previous layer and an actual one.
-// Instead of it, it is just collects errors for correction synapses between itself
-// and a next layer (possibly) output.
-func (l *hiddenDenseFirst) backward(eRRors [][]float64) {
+func (l *hiddenDense) backward(eRRors [][]float64) {
 	if l.corrections == nil {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
@@ -139,7 +142,7 @@ func (l *hiddenDenseFirst) backward(eRRors [][]float64) {
 	}
 }
 
-func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
+func (l *hiddenDense) applyCorrections(batchSize float64) {
 	for i, corr := range l.corrections {
 		for j, c := range corr {
 			l.synapses[i][j] += l.learningRate * c / batchSize
@@ -148,7 +151,7 @@ func (l *hiddenDenseFirst) applyCorrections(batchSize float64) {
 }
 
 func newFirstHidden(prev, curr, next int, learningRate float64, activation Activation) firstHiddenLayer {
-	layer := &hiddenDenseFirst{
+	layer := &hiddenDense{
 		Activation: activation,
 		synapseInitializer: &denseSynapses{
 			prev: prev,
@@ -163,15 +166,6 @@ func newFirstHidden(prev, curr, next int, learningRate float64, activation Activ
 	layer.init()
 	return layer
 }
-
-//type hiddenLayer struct {
-//actication
-//synapseInitializer
-//currLayerSize, nextLayerSize int
-//learningRate float64
-//input [][]float64
-//corrections, synapses [][]float64
-//}
 
 type outputDense struct {
 	Activation

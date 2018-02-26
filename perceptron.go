@@ -1,16 +1,24 @@
 package go_deep
 
 type Perceptron struct {
-	input       inputLayer
-	hiddenFirst firstHiddenLayer
-	//hidden      []hiddenLayer
+	input  inputLayer
+	hidden []hiddenLayer
 	output outputLayer
 }
 
 func (n *Perceptron) backward(prediction []float64, labels []float64) {
-	n.hiddenFirst.backward(
-		n.output.backward(prediction, labels),
-	)
+	var backpropErrs []float64
+	backpropErrs = n.output.backward(prediction, labels)
+	for _, l := range n.hidden {
+		backpropErrs = l.backward(backpropErrs)
+	}
+}
+
+func (l *Perceptron) applyCorrections(batchSize float64) {
+	for _, l := range l.hidden {
+		l.applyCorrections(batchSize)
+	}
+	l.input.applyCorrections(batchSize)
 }
 
 func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64) {
@@ -22,7 +30,7 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 	for j := 0; j <= epochs; j++ {
 		for i, v := range set {
 			if batchCounter >= batchSize {
-				n.hiddenFirst.applyCorrections(float64(batchSize))
+				n.applyCorrections(float64(batchSize))
 				costGradient = append(costGradient, localCost/float64(batchSize))
 				batchCounter = 0
 				localCost = 0

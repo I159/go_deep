@@ -10,7 +10,7 @@ const SCALING_BASE = .7
 
 // TODO: create a new type derived from slice of floats.
 type synapseInitializer interface {
-	init(prev, curr, next int, bias float64)
+	init(prev, curr, next int, bias float64) [][]float64
 }
 
 type denseSynapses [][]float64
@@ -49,7 +49,7 @@ func (s *denseSynapses) addBiases(next int, bias float64) {
 	s = append(s, biasSignal)
 }
 
-func (s denseSynapses) init(prev, curr, next int, bias float64) {
+func (s denseSynapses) init(prev, curr, next int, bias float64) [][]float64 {
 	&s.randomInit(curr, next)
 	&s.nguyenWiderow(prev, curr)
 	&s.addBiases(next, bias)

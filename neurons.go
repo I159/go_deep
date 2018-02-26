@@ -1,9 +1,13 @@
+/*
+We simply need to calculate the backpropagated error signal that reaches that layer \delta_l
+and weight it by the feed-forward signal a_{l-1}feeding into that layer!
+*/
 package go_deep
 
 type inputLayer interface {
 	synapseInitializer
 	forward([]float64) [][]float64
-	backward([][]float64)
+	backward([]float64)
 	applyCorrections(float64)
 }
 
@@ -11,7 +15,7 @@ type hiddenLayer interface {
 	Activation
 	synapseInitializer
 	forward([][]float64) [][]float64
-	backward([][]float64) [][]float64
+	backward([]float64) []float64
 	applyCorrections(float64)
 }
 
@@ -20,7 +24,7 @@ type outputLayer interface {
 	cost
 	forwardMeasure([][]float64, []float64) ([]float64, float64)
 	forward(rowInput [][]float64) []float64
-	backward(prediction, labels []float64) [][]float64
+	backward(prediction, labels []float64) []float64
 }
 
 type inputDense struct {
@@ -70,7 +74,6 @@ func (l *inputDense) applyCorrections(batchSize float64) {
 
 func NewInputDense(curr, next int, bias, learningRate float64) inputLayer {
 	layer := &inputDense{
-		Activation:         activation,
 		synapseInitializer: denseSynapses{},
 		currLayerSize:      curr,
 		nextLayerSize:      next,
@@ -166,7 +169,7 @@ func (l *hiddenDense) applyCorrections(batchSize float64) {
 	}
 }
 
-func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation Activation) firstHiddenLayer {
+func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation Activation) hiddenLayer {
 	layer := &hiddenDense{
 		Activation:         activation,
 		synapseInitializer: &denseSynapses{},
@@ -212,7 +215,7 @@ func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (pr
 
 func (l *outputDense) backward(prediction []float64, labels []float64) (corrections []float64) {
 	var cost, zk float64
-	corrections = make([][]float64, l.prevLayerSize)
+	corrections = make([]float64, l.prevLayerSize)
 
 	for i, ak := range prediction {
 		// Delta rule

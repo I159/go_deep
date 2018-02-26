@@ -4,6 +4,7 @@ type backwardPropagation interface {
 	forward(set []float64) (output []float64)
 	forwardMeasure(set, labels []float64) (prediction []float64, cost float64)
 	backward(prediction, labels []float64)
+	applyCorrections(float64)
 }
 
 type network interface {

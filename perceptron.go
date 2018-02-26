@@ -46,18 +46,21 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 
 func (n *Perceptron) forward(rowInput []float64) []float64 {
 	// NOTE: this is a single layer implementation
-	return n.output.forward(
-		n.hiddenFirst.forward(
-			n.input.forward(rowInput),
-		),
-	)
+	var fwdProp [][]float64
+	fwdProp = n.input.forward(rowInput)
+	for _, l := range n.hidden {
+		fwdProp = l.forward(fwdProp)
+	}
+	return n.output.forward(fwdProp)
 }
 
 func (n *Perceptron) forwardMeasure(rowInput, labels []float64) (prediction []float64, cost float64) {
-	res := n.hiddenFirst.forward(
-		n.input.forward(rowInput),
-	)
-	return n.output.forwardMeasure(res, labels)
+	var fwdProp [][]float64
+	fwdProp = n.input.forward(rowInput)
+	for _, l := range n.hidden {
+		fwdProp = l.forward(fwdProp)
+	}
+	return n.output.forwardMeasure(fwdProp, labels)
 }
 
 func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {

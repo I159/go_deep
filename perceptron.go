@@ -73,26 +73,32 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 	return
 }
 
-type Shape struct {
-	InputSize           int
-	HiddenSizes         []int // TODO: use it in multilayer
-	OutputSize          int
-	HiddenLearningRates []float64
-	HiddenActivations   []Activation
-	OutputActivation    Activation
-	Cost                cost
+
+type HiddenShape struct {
+	Size int
+	LearningRate, Bias float64
+	Activation Activation
 }
 
-func NewPerceptron(shape Shape) network {
+type OutputShape struct {
+	Size int
+	LearningRate float64
+	Activation Activation
+	Cost Cost
+}
+
+func NewPerceptron(inputSize int, hiddenShapes []HiddenShape, outputShape OutputShape) network {
 	return &Perceptron{
 		input: &inputDense{},
-		hiddenFirst: newFirstHidden(
-			shape.InputSize,
-			shape.HiddenSizes[0],
-			shape.OutputSize,
-			shape.HiddenLearningRates[0],
-			shape.HiddenActivations[0],
-		),
-		output: newOutput(shape.HiddenSizes[0], shape.OutputSize, shape.OutputActivation, shape.Cost),
+		hidden: []hiddenLayer{
+			newHiddenDense(
+				inputSize,
+				hiddenShapes[0].Size,
+				OutputShape.Size,
+				hiddenShapes[0].LearningRate,
+				hiddenShapes[0].Activation,
+			),
+		},
+		output: newOutput(hiddenShapes[0].Size, outputShape.Size, outputShape.Activation, outputShape.Cost),
 	}
 }

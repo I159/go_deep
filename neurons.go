@@ -54,12 +54,12 @@ func (l *inputDense) backward(eRRors []float64) {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
 
-	for i, a := range l.input {
+	for j, eRR := range eRRors {
 		if l.corrections[i] == nil {
 			l.corrections[i] = make([]float64, l.nextLayerSize)
 		}
-		for j, eRR := range eRRors {
-			l.corrections[i][j] += eRR * a
+		for i, a := range l.input {
+			l.corrections[j][i] += eRR * a
 		}
 	}
 }
@@ -72,7 +72,7 @@ func (l *inputDense) applyCorrections(batchSize float64) {
 	}
 }
 
-func NewInputDense(curr, next int, bias, learningRate float64) inputLayer {
+func NewInputDense(curr, next int, learningRate float64) inputLayer {
 	layer := &inputDense{
 		synapseInitializer: denseSynapses{},
 		currLayerSize:      curr,
@@ -91,12 +91,11 @@ type hiddenDense struct {
 	synapseInitializer
 	prevLayerSize, currLayerSize, nextLayerSize int
 	learningRate                                float64
-	output, corrections, synapses               [][]float64
-	input                                       []float64
+	corrections, synapses               [][]float64
+	activated, input                                       []float64
 }
 
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
-	var activated []float64
 	var inputSum float64
 	output = make([][]float64, l.nextLayerSize)
 
@@ -106,21 +105,20 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
 			inputSum += j
 		}
 		l.input = append(l.input, inputSum)
-		activated = append(activated, l.activate(inputSum))
+		l.activated = append(l.activated, l.activate(inputSum))
 	}
 
 	for i := 0; i < l.nextLayerSize; i++ {
-		for j, v := range activated {
+		for j, a := range l.activated {
 			if output[i] == nil {
 				output[i] = make([]float64, l.currLayerSize)
 			}
 			// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
-			output[i][j] = l.synapses[j][i] * v
+			output[i][j] = l.synapses[j][i] * a
 		}
 		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
 	}
 
-	l.output = output
 	return output
 }
 
@@ -131,31 +129,24 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
 
-	for i := 0; i < l.currLayerSize; i++ {
-		if l.corrections[i] == nil {
-			l.corrections[i] = make([]float64, l.nextLayerSize)
+	for i, eRR := range eRRors {
+		if l.corrections[j] == nil {
+			l.corrections[j] = make([]float64, l.nextLayerSize)
 		}
-		for j := 0; j < l.nextLayerSize; j++ {
-			// TODO: check matrix reshape correctness
-			if i < l.currLayerSize-1 {
-				l.corrections[i][j] += eRRors[j] * l.output[j][i]
-			} else {
-				// Bias
-				l.corrections[i][j] += eRRors[j]
-			}
+		for j, a := l.activated {
+			l.corrections[j][i] = eRR * a
 		}
 	}
 
 	// Propagate backward
-	var weightedErrSum float64
-	for i, v := range l.input {
-		acDer := l.actDerivative(v)
-		weightedErrSum = 0
-
-		for j, k := range l.synapses[i] {
-			weightedErrSum += eRRors[j] * k
+	var eRRSum float64
+	for i := range synapses {
+		actDer := l.actDerivative(l.input[i])
+		eRRSum = 0
+		for j, eRR := range eRRors {
+			eRRSum += synapses[i][j] * eRR
 		}
-		nextLayerErrors = append(nextLayerErrors, acDer*weightedErrSum)
+		nextLayerErrors = append(nextLayerErrors, actDer * eRRSum)
 	}
 
 	return
@@ -213,9 +204,9 @@ func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (pr
 	return
 }
 
-func (l *outputDense) backward(prediction []float64, labels []float64) (corrections []float64) {
+func (l *outputDense) backward(prediction []float64, labels []float64) (eRRors []float64) {
 	var cost, zk float64
-	corrections = make([]float64, l.prevLayerSize)
+	eRRors = make([]float64, l.prevLayerSize)
 
 	for i, ak := range prediction {
 		// Delta rule

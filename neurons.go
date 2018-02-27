@@ -123,7 +123,6 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
 	return output
 }
 
-// FIXME: errors from an output layer are needed to compute actual corrections at hidden layers.
 func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 	// Collect corrections for further forward error propagation
 	if l.corrections == nil {
@@ -213,9 +212,9 @@ func (l *outputDense) backward(prediction []float64, labels []float64) (eRRors [
 	var cost, zk float64
 	eRRors = make([]float64, l.prevLayerSize)
 
-	for i, ak := range prediction {
+	for i, pred := range prediction {
 		// Delta rule
-		cost = l.costDerivative(ak, labels[i]) * l.actDerivative(l.input[i])
+		cost = l.costDerivative(pred, labels[i]) * l.actDerivative(l.input[i])
 		corrections = append(corrections, cost)
 	}
 	return

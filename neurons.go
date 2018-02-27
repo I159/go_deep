@@ -38,6 +38,7 @@ type inputDense struct {
 func (l *inputDense) forward(input []float64) (output [][]float64) {
 	l.input = input
 
+	output = make([][]float64, l.nextLayerSize)
 	for i := 0; i < l.nextLayerSize; i++ {
 		for j, v := range input {
 			if output[i] == nil {
@@ -83,7 +84,7 @@ func newInputDense(curr, next int, learningRate float64) inputLayer {
 		nextLayerSize: next,
 		learningRate:  learningRate,
 	}
-	layer.init()
+	layer.synapses = layer.init()
 	return layer
 }
 
@@ -176,7 +177,7 @@ func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation
 		nextLayerSize: next,
 		learningRate:  -learningRate,
 	}
-	layer.init()
+	layer.synapses = layer.init()
 	return layer
 }
 

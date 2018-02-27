@@ -12,7 +12,7 @@ type inputLayer interface {
 }
 
 type hiddenLayer interface {
-	Activation
+	activation
 	synapseInitializer
 	forward([][]float64) [][]float64
 	backward([]float64) []float64
@@ -20,7 +20,7 @@ type hiddenLayer interface {
 }
 
 type outputLayer interface {
-	Activation
+	activation
 	cost
 	forwardMeasure([][]float64, []float64) ([]float64, float64)
 	forward(rowInput [][]float64) []float64
@@ -72,9 +72,9 @@ func (l *inputDense) applyCorrections(batchSize float64) {
 	}
 }
 
-func NewInputDense(curr, next int, learningRate float64) inputLayer {
+func newInputDense(curr, next int, learningRate float64) inputLayer {
 	layer := &inputDense{
-		synapseInitializer: denseSynapses{
+		synapseInitializer: &denseSynapses{
 			prev: 1,
 			curr: curr,
 			next: next,
@@ -88,7 +88,7 @@ func NewInputDense(curr, next int, learningRate float64) inputLayer {
 }
 
 type hiddenDense struct {
-	Activation
+	activation
 	synapseInitializer
 	prevLayerSize, currLayerSize, nextLayerSize int
 	learningRate                                float64
@@ -130,8 +130,8 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 	}
 
 	for i, eRR := range eRRors {
-		if l.corrections[j] == nil {
-			l.corrections[j] = make([]float64, l.nextLayerSize)
+		if l.corrections[i] == nil {
+			l.corrections[i] = make([]float64, l.nextLayerSize)
 		}
 		for j, a := range l.activated {
 			l.corrections[j][i] = eRR * a
@@ -140,11 +140,11 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 
 	// Propagate backward
 	var eRRSum float64
-	for i := range synapses {
+	for i := range l.synapses {
 		actDer := l.actDerivative(l.input[i])
 		eRRSum = 0
 		for j, eRR := range eRRors {
-			eRRSum += synapses[i][j] * eRR
+			eRRSum += l.synapses[i][j] * eRR
 		}
 		nextLayerErrors = append(nextLayerErrors, actDer*eRRSum)
 	}
@@ -160,14 +160,16 @@ func (l *hiddenDense) applyCorrections(batchSize float64) {
 	}
 }
 
-func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation Activation) hiddenLayer {
+func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation activation) hiddenLayer {
 	layer := &hiddenDense{
-		Activation: activation,
+		activation: activation,
 		synapseInitializer: &hiddenDenseSynapses{
-			prev: prev,
-			curr: curr,
-			next: next,
-			bias: bias,
+			denseSynapses{
+				prev: prev,
+				curr: curr,
+				next: next,
+			},
+			bias,
 		},
 		prevLayerSize: prev,
 		currLayerSize: curr,
@@ -179,7 +181,7 @@ func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation
 }
 
 type outputDense struct {
-	Activation
+	activation
 	// Cost function exists only in output layer and in hidden layers used indirectly
 	// as a sum of weighted errors. Thus cost function is global for a network.
 	input []float64
@@ -209,20 +211,20 @@ func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (pr
 }
 
 func (l *outputDense) backward(prediction []float64, labels []float64) (eRRors []float64) {
-	var cost, zk float64
+	var cost float64
 	eRRors = make([]float64, l.prevLayerSize)
 
 	for i, pred := range prediction {
 		// Delta rule
 		cost = l.costDerivative(pred, labels[i]) * l.actDerivative(l.input[i])
-		corrections = append(corrections, cost)
+		eRRors = append(eRRors, cost)
 	}
 	return
 }
 
-func newOutput(prev, curr int, activation Activation, cost cost) outputLayer {
+func newOutput(prev, curr int, activation activation, cost cost) outputLayer {
 	return &outputDense{
-		Activation:    activation,
+		activation:    activation,
 		cost:          cost,
 		prevLayerSize: prev,
 	}

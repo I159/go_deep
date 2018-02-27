@@ -22,7 +22,7 @@ func (s *denseSynapses) randomInit() {
 	for i := 0; i < s.curr-1; i++ {
 		s.synapses = append(s.synapses, []float64{})
 		for j := 0; j < s.next; j++ {
-			s[i] = append(s.synapses[i], rand.Float64()-0.5)
+			s.synapses[i] = append(s.synapses[i], rand.Float64()-0.5)
 		}
 	}
 }

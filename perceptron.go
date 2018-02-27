@@ -84,7 +84,7 @@ type OutputShape struct {
 	Size int
 	LearningRate float64
 	Activation Activation
-	Cost Cost
+	Cost cost
 }
 
 func NewPerceptron(inputSize int, hiddenShapes []HiddenShape, outputShape OutputShape) network {

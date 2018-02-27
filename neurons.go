@@ -54,11 +54,11 @@ func (l *inputDense) backward(eRRors []float64) {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
 
-	for j, eRR := range eRRors {
+	for i, eRR := range eRRors {
 		if l.corrections[i] == nil {
 			l.corrections[i] = make([]float64, l.nextLayerSize)
 		}
-		for i, a := range l.input {
+		for j, a := range l.input {
 			l.corrections[j][i] += eRR * a
 		}
 	}
@@ -74,15 +74,16 @@ func (l *inputDense) applyCorrections(batchSize float64) {
 
 func NewInputDense(curr, next int, learningRate float64) inputLayer {
 	layer := &inputDense{
-		synapseInitializer: denseSynapses{},
-		currLayerSize:      curr,
-		nextLayerSize:      next,
-		learningRate:       learningRate,
+		synapseInitializer: denseSynapses{
+			prev: 1,
+			curr: curr,
+			next: next,
+		},
+		currLayerSize: curr,
+		nextLayerSize: next,
+		learningRate:  learningRate,
 	}
-	// NOTE: There is no previous layer but incoming data is flat it means that
-	// input signal for a neuron of an input layer is not a sum but a single value
-	// TODO: kind of bad design. Kept there to have synapses as pure slices. Possibly should be refactored... Later...
-	layer.synapses = layer.init(1, curr, next, bias)
+	layer.init()
 	return layer
 }
 
@@ -91,8 +92,8 @@ type hiddenDense struct {
 	synapseInitializer
 	prevLayerSize, currLayerSize, nextLayerSize int
 	learningRate                                float64
-	corrections, synapses               [][]float64
-	activated, input                                       []float64
+	corrections, synapses                       [][]float64
+	activated, input                            []float64
 }
 
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
@@ -133,7 +134,7 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 		if l.corrections[j] == nil {
 			l.corrections[j] = make([]float64, l.nextLayerSize)
 		}
-		for j, a := l.activated {
+		for j, a := range l.activated {
 			l.corrections[j][i] = eRR * a
 		}
 	}
@@ -146,7 +147,7 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 		for j, eRR := range eRRors {
 			eRRSum += synapses[i][j] * eRR
 		}
-		nextLayerErrors = append(nextLayerErrors, actDer * eRRSum)
+		nextLayerErrors = append(nextLayerErrors, actDer*eRRSum)
 	}
 
 	return
@@ -162,15 +163,19 @@ func (l *hiddenDense) applyCorrections(batchSize float64) {
 
 func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation Activation) hiddenLayer {
 	layer := &hiddenDense{
-		Activation:         activation,
-		synapseInitializer: &denseSynapses{},
-		prevLayerSize:      prev,
-		currLayerSize:      curr,
-		nextLayerSize:      next,
-		learningRate:       -learningRate,
+		Activation: activation,
+		synapseInitializer: &hiddenDenseSynapses{
+			prev: prev,
+			curr: curr,
+			next: next,
+			bias: bias,
+		},
+		prevLayerSize: prev,
+		currLayerSize: curr,
+		nextLayerSize: next,
+		learningRate:  -learningRate,
 	}
-	// TODO: kind of bad design. Kept there to have synapses as pure slices. Possibly should be refactored... Later...
-	layer.synapses = layer.init(prev, curr, next, bias)
+	layer.init()
 	return layer
 }
 

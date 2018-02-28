@@ -19,7 +19,7 @@ type denseSynapses struct {
 
 func (s *denseSynapses) randomInit() {
 	rand.Seed(time.Now().UTC().UnixNano())
-	for i := 0; i < s.curr-1; i++ {
+	for i := 0; i < s.curr; i++ {
 		s.synapses = append(s.synapses, []float64{})
 		for j := 0; j < s.next; j++ {
 			s.synapses[i] = append(s.synapses[i], rand.Float64()-0.5)
@@ -63,6 +63,7 @@ func (s *hiddenDenseSynapses) addBiases() {
 }
 
 func (s hiddenDenseSynapses) init() [][]float64 {
+	s.curr-- //Free space for baias signal
 	s.denseSynapses.init()
 	s.addBiases()
 	return s.synapses

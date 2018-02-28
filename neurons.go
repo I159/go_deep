@@ -131,10 +131,10 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 	}
 
 	for i, eRR := range eRRors {
-		if l.corrections[i] == nil {
-			l.corrections[i] = make([]float64, l.nextLayerSize)
-		}
 		for j, a := range l.activated {
+			if l.corrections[j] == nil {
+				l.corrections[j] = make([]float64, l.nextLayerSize)
+			}
 			l.corrections[j][i] = eRR * a
 		}
 	}
@@ -212,13 +212,12 @@ func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (pr
 }
 
 func (l *outputDense) backward(prediction []float64, labels []float64) (eRRors []float64) {
-	var cost float64
-	eRRors = make([]float64, l.prevLayerSize)
+	var eRR float64
 
 	for i, pred := range prediction {
 		// Delta rule
-		cost = l.costDerivative(pred, labels[i]) * l.actDerivative(l.input[i])
-		eRRors = append(eRRors, cost)
+		eRR = l.costDerivative(pred, labels[i]) * l.actDerivative(l.input[i])
+		eRRors = append(eRRors, eRR)
 	}
 	return
 }

@@ -39,7 +39,7 @@ func (l *inputDense) forward(input []float64) (output [][]float64) {
 	l.input = input
 
 	output = make([][]float64, l.nextLayerSize)
-	for i := 0; i < l.nextLayerSize - 1; i++ {
+	for i := 0; i < l.nextLayerSize-1; i++ {
 		for j, v := range input {
 			if output[i] == nil {
 				output[i] = make([]float64, l.currLayerSize)
@@ -115,10 +115,9 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
 			if output[i] == nil {
 				output[i] = make([]float64, l.currLayerSize)
 			}
-			// Transition between layers is a matrix reshape. Way or another reshape matrix is required on step of multiplication or sum.
 			output[i][j] = l.synapses[j][i] * a
 		}
-		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i] // Add i bias to the sum of weighted output. Bias doesn't use signal, bias is a weight without input.
+		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i]
 	}
 
 	return output
@@ -135,9 +134,10 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 			if l.corrections[j] == nil {
 				l.corrections[j] = make([]float64, l.nextLayerSize)
 			}
-			l.corrections[j][i] = eRR * a
+			l.corrections[j][i] += eRR * a
 		}
 	}
+	l.activated = nil
 
 	// Propagate backward
 	var eRRSum float64

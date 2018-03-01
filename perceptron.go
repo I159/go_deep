@@ -1,16 +1,26 @@
 package go_deep
 
+import "fmt"
+
 type Perceptron struct {
-	input       inputLayer
-	hiddenFirst firstHiddenLayer
-	//hidden      []hiddenLayer
+	input  inputLayer
+	hidden []hiddenLayer
 	output outputLayer
 }
 
 func (n *Perceptron) backward(prediction []float64, labels []float64) {
-	n.hiddenFirst.backward(
-		n.output.backward(prediction, labels),
-	)
+	var backpropErrs []float64
+	backpropErrs = n.output.backward(prediction, labels)
+	for _, l := range n.hidden {
+		backpropErrs = l.backward(backpropErrs)
+	}
+}
+
+func (l *Perceptron) applyCorrections(batchSize float64) {
+	for _, l := range l.hidden {
+		l.applyCorrections(batchSize)
+	}
+	l.input.applyCorrections(batchSize)
 }
 
 func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64) {
@@ -20,9 +30,10 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 	var localCost float64
 
 	for j := 0; j <= epochs; j++ {
+		fmt.Printf("Epochs: %d\n", j)
 		for i, v := range set {
 			if batchCounter >= batchSize {
-				n.hiddenFirst.applyCorrections(float64(batchSize))
+				n.applyCorrections(float64(batchSize))
 				costGradient = append(costGradient, localCost/float64(batchSize))
 				batchCounter = 0
 				localCost = 0
@@ -38,18 +49,21 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 
 func (n *Perceptron) forward(rowInput []float64) []float64 {
 	// NOTE: this is a single layer implementation
-	return n.output.forward(
-		n.hiddenFirst.forward(
-			n.input.forward(rowInput),
-		),
-	)
+	var fwdProp [][]float64
+	fwdProp = n.input.forward(rowInput)
+	for _, l := range n.hidden {
+		fwdProp = l.forward(fwdProp)
+	}
+	return n.output.forward(fwdProp)
 }
 
 func (n *Perceptron) forwardMeasure(rowInput, labels []float64) (prediction []float64, cost float64) {
-	res := n.hiddenFirst.forward(
-		n.input.forward(rowInput),
-	)
-	return n.output.forwardMeasure(res, labels)
+	var fwdProp [][]float64
+	fwdProp = n.input.forward(rowInput)
+	for _, l := range n.hidden {
+		fwdProp = l.forward(fwdProp)
+	}
+	return n.output.forwardMeasure(fwdProp, labels)
 }
 
 func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
@@ -62,26 +76,35 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 	return
 }
 
-type Shape struct {
-	InputSize           int
-	HiddenSizes         []int // TODO: use it in multilayer
-	OutputSize          int
-	HiddenLearningRates []float64
-	HiddenActivations   []Activation
-	OutputActivation    Activation
-	Cost                cost
+type InputShape struct {
+	Size         int
+	LearningRate float64
+}
+type HiddenShape struct {
+	Size               int
+	LearningRate, Bias float64
+	Activation         activation
 }
 
-func NewPerceptron(shape Shape) network {
+type OutputShape struct {
+	Size       int
+	Activation activation
+	Cost       cost
+}
+
+func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShape OutputShape) network {
 	return &Perceptron{
-		input: &inputDense{},
-		hiddenFirst: newFirstHidden(
-			shape.InputSize,
-			shape.HiddenSizes[0],
-			shape.OutputSize,
-			shape.HiddenLearningRates[0],
-			shape.HiddenActivations[0],
-		),
-		output: newOutput(shape.HiddenSizes[0], shape.OutputSize, shape.OutputActivation, shape.Cost),
+		input: newInputDense(inputShape.Size, hiddenShapes[0].Size, inputShape.LearningRate),
+		hidden: []hiddenLayer{
+			newHiddenDense(
+				inputShape.Size,
+				hiddenShapes[0].Size,
+				outputShape.Size,
+				hiddenShapes[0].Bias,
+				hiddenShapes[0].LearningRate,
+				hiddenShapes[0].Activation,
+			),
+		},
+		output: newOutput(hiddenShapes[0].Size, outputShape.Size, outputShape.Activation, outputShape.Cost),
 	}
 }

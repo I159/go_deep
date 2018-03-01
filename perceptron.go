@@ -1,5 +1,7 @@
 package go_deep
 
+import "fmt"
+
 type Perceptron struct {
 	input  inputLayer
 	hidden []hiddenLayer
@@ -28,6 +30,7 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 	var localCost float64
 
 	for j := 0; j <= epochs; j++ {
+		fmt.Printf("Epochs: %d\n", j)
 		for i, v := range set {
 			if batchCounter >= batchSize {
 				n.applyCorrections(float64(batchSize))
@@ -74,19 +77,19 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64) {
 }
 
 type InputShape struct {
-	Size int
+	Size         int
 	LearningRate float64
 }
 type HiddenShape struct {
-	Size int
+	Size               int
 	LearningRate, Bias float64
-	Activation activation
+	Activation         activation
 }
 
 type OutputShape struct {
-	Size int
+	Size       int
 	Activation activation
-	Cost cost
+	Cost       cost
 }
 
 func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShape OutputShape) network {

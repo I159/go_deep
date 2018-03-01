@@ -101,6 +101,10 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
 	var inputSum float64
 	output = make([][]float64, l.nextLayerSize)
 
+	// Activated output used at backward propagation, but obviously filled
+	// not only after backprop. For correct accumulation of activated
+	// output values required cleanup before forward propagation but not after backward.
+	l.activated = nil
 	for _, i := range input {
 		inputSum = 0
 		for _, j := range i {
@@ -137,7 +141,6 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 			l.corrections[j][i] += eRR * a
 		}
 	}
-	l.activated = nil
 
 	// Propagate backward
 	var eRRSum float64
@@ -175,7 +178,7 @@ func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation
 		prevLayerSize: prev,
 		currLayerSize: curr,
 		nextLayerSize: next,
-		learningRate:  -learningRate,
+		learningRate:  learningRate,
 	}
 	layer.synapses = layer.init()
 	return layer

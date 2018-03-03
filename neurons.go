@@ -109,7 +109,7 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 	l.input = nil
 	for _, i := range input {
 
-		// TODO: could be optimized. Don't collect input out of learning proces.
+		// TODO: could be optimized. Don't collect input out of learning process.
 		inputSum = 0
 		for _, j := range i {
 			inputSum += j

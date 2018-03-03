@@ -13,6 +13,7 @@ type activation interface {
 type Sygmoid struct{}
 
 func (s *Sygmoid) activate(n float64) (float64, error) {
+	// Smooth n between 4 and -4
 	exp := math.Exp(n)
 
 	if exp == 0 || math.IsInf(exp, 0) {

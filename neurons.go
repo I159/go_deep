@@ -134,7 +134,7 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i]
 	}
 
-	return 
+	return
 }
 
 func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64, err error) {

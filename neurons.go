@@ -71,6 +71,7 @@ func (l *inputDense) applyCorrections(batchSize float64) {
 			l.synapses[i][j] += l.learningRate * c / batchSize
 		}
 	}
+	l.corrections = nil
 }
 
 func newInputDense(curr, next int, learningRate float64) inputLayer {
@@ -105,8 +106,10 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 	// not only after backprop. For correct accumulation of activated
 	// output values required cleanup before forward propagation but not after backward.
 	l.activated = nil
+	l.input = nil
 	for _, i := range input {
 
+		// TODO: could be optimized. Don't collect input out of learning proces.
 		inputSum = 0
 		for _, j := range i {
 			inputSum += j
@@ -174,6 +177,7 @@ func (l *hiddenDense) applyCorrections(batchSize float64) {
 			l.synapses[i][j] += l.learningRate * c / batchSize
 		}
 	}
+	l.corrections = nil
 }
 
 func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation activation) hiddenLayer {
@@ -208,6 +212,7 @@ type outputDense struct {
 func (l *outputDense) forward(rowInput [][]float64) (output []float64, err error) {
 	var iSum, actVal float64
 
+	l.input = nil
 	for _, raw := range rowInput {
 		iSum = 0
 		for _, item := range raw {

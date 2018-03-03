@@ -7,7 +7,7 @@ type backwardPropagation interface {
 	applyCorrections(float64)
 }
 
-type network interface {
+type Network interface {
 	backwardPropagation
 	Learn(set, labels [][]float64, epochs int, batchSize int) ([]float64, error)
 	Recognize([][]float64) ([][]float64, error)

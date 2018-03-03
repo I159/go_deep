@@ -120,7 +120,7 @@ type OutputShape struct {
 	Cost       cost
 }
 
-func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShape OutputShape) network {
+func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShape OutputShape) Network {
 	return &Perceptron{
 		input: newInputDense(inputShape.Size, hiddenShapes[0].Size, inputShape.LearningRate),
 		hidden: []hiddenLayer{

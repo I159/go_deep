@@ -53,6 +53,15 @@ func NewSigmoid(prevLayerSize, minInpVal, maxInpVal, minWeight, maxWeight, prevB
 		range are required at initialization of sigmoid.
 		If no bias is present in a layer then put 0 as a bias
 	*/
+	rangeCandidates := [4]float64{
+		minInpVal * minWeight,
+		minInpVal * maxWeight,
+		maxInpVal * maxWeight,
+		maxInpVal * minWeight
+	}
+	// TODO: get possible max and min among weights and input values combinations.
+	// Input maximum and minimum could be positive or negative so real maximum or
+	// minimum could be reached with any combination.
 	sigmoid := Sigmoid{
 		oldMin: prevLayerSize*minInpVal*minWeight + prevBias,
 		oldMax: prevLayerSize*maxInpVal*maxWeight + prevBias,

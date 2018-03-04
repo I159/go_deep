@@ -39,8 +39,8 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) ([]fl
 	var localCost float64
 	var costGradient []float64
 
-	for j := 0; j <= epochs; j++ {
-		fmt.Printf("Epochs: %d\n", j)
+	for j := 0; j < epochs; j++ {
+		fmt.Printf("Epochs: %d\n", j+1)
 		for i, v := range set {
 			if batchCounter >= batchSize {
 				n.applyCorrections(float64(batchSize))

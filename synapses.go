@@ -45,7 +45,6 @@ func (s *denseSynapses) nguyenWiderow() {
 
 func (s *denseSynapses) init() [][]float64 {
 	s.randomInit()
-	s.nguyenWiderow()
 	return s.synapses
 }
 
@@ -65,6 +64,7 @@ func (s *hiddenDenseSynapses) addBiases() {
 func (s hiddenDenseSynapses) init() [][]float64 {
 	s.curr-- //Free space for baias signal
 	s.denseSynapses.init()
+	s.nguyenWiderow()
 	s.addBiases()
 	return s.synapses
 }

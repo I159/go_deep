@@ -14,17 +14,17 @@ type inputLayer interface {
 type hiddenLayer interface {
 	activation
 	synapseInitializer
-	forward([][]float64) [][]float64
-	backward([]float64) []float64
+	forward([][]float64) ([][]float64, error)
+	backward([]float64) ([]float64, error)
 	applyCorrections(float64)
 }
 
 type outputLayer interface {
 	activation
 	cost
-	forwardMeasure([][]float64, []float64) ([]float64, float64)
-	forward(rowInput [][]float64) []float64
-	backward(prediction, labels []float64) []float64
+	forwardMeasure([][]float64, []float64) ([]float64, float64, error)
+	forward(rowInput [][]float64) ([]float64, error)
+	backward(prediction, labels []float64) ([]float64, error)
 }
 
 type inputDense struct {
@@ -71,6 +71,7 @@ func (l *inputDense) applyCorrections(batchSize float64) {
 			l.synapses[i][j] += l.learningRate * c / batchSize
 		}
 	}
+	l.corrections = nil
 }
 
 func newInputDense(curr, next int, learningRate float64) inputLayer {
@@ -97,21 +98,30 @@ type hiddenDense struct {
 	activated, input                            []float64
 }
 
-func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
-	var inputSum float64
+func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error) {
+	var inputSum, actValue float64
 	output = make([][]float64, l.nextLayerSize)
 
 	// Activated output used at backward propagation, but obviously filled
 	// not only after backprop. For correct accumulation of activated
 	// output values required cleanup before forward propagation but not after backward.
 	l.activated = nil
+	l.input = nil
 	for _, i := range input {
+
+		// TODO: could be optimized. Don't collect input out of learning process.
 		inputSum = 0
 		for _, j := range i {
 			inputSum += j
 		}
+
 		l.input = append(l.input, inputSum)
-		l.activated = append(l.activated, l.activate(inputSum))
+		actValue, err = l.activate(inputSum)
+		if err != nil {
+			return
+		}
+
+		l.activated = append(l.activated, actValue)
 	}
 
 	for i := 0; i < l.nextLayerSize; i++ {
@@ -124,10 +134,10 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64) {
 		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i]
 	}
 
-	return output
+	return
 }
 
-func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
+func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64, err error) {
 	// Collect corrections for further forward error propagation
 	if l.corrections == nil {
 		l.corrections = make([][]float64, l.currLayerSize)
@@ -143,9 +153,14 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64) {
 	}
 
 	// Propagate backward
-	var eRRSum float64
+	var eRRSum, actDer float64
 	for i := range l.synapses {
-		actDer := l.actDerivative(l.input[i])
+
+		actDer, err = l.actDerivative(l.input[i])
+		if err != nil {
+			return
+		}
+
 		eRRSum = 0
 		for j, eRR := range eRRors {
 			eRRSum += l.synapses[i][j] * eRR
@@ -162,6 +177,7 @@ func (l *hiddenDense) applyCorrections(batchSize float64) {
 			l.synapses[i][j] += l.learningRate * c / batchSize
 		}
 	}
+	l.corrections = nil
 }
 
 func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation activation) hiddenLayer {
@@ -193,9 +209,10 @@ type outputDense struct {
 	prevLayerSize int
 }
 
-func (l *outputDense) forward(rowInput [][]float64) (output []float64) {
-	var iSum float64
+func (l *outputDense) forward(rowInput [][]float64) (output []float64, err error) {
+	var iSum, actVal float64
 
+	l.input = nil
 	for _, raw := range rowInput {
 		iSum = 0
 		for _, item := range raw {
@@ -203,23 +220,34 @@ func (l *outputDense) forward(rowInput [][]float64) (output []float64) {
 		}
 
 		l.input = append(l.input, iSum)
-		output = append(output, l.activate(iSum))
+		actVal, err = l.activate(iSum)
+		if err != nil {
+			return
+		}
+		output = append(output, actVal)
 	}
 	return
 }
 
-func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (prediction []float64, cost float64) {
-	prediction = l.forward(rowInput)
+func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (prediction []float64, cost float64, err error) {
+	prediction, err = l.forward(rowInput)
+	if err != nil {
+		return
+	}
 	cost = l.countCost(prediction, labels)
 	return
 }
 
-func (l *outputDense) backward(prediction []float64, labels []float64) (eRRors []float64) {
-	var eRR float64
+func (l *outputDense) backward(prediction []float64, labels []float64) (eRRors []float64, err error) {
+	var eRR, actDer float64
 
 	for i, pred := range prediction {
 		// Delta rule
-		eRR = l.costDerivative(pred, labels[i]) * l.actDerivative(l.input[i])
+		actDer, err = l.actDerivative(l.input[i])
+		if err != nil {
+			return
+		}
+		eRR = l.costDerivative(pred, labels[i]) * actDer
 		eRRors = append(eRRors, eRR)
 	}
 	return

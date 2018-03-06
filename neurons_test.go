@@ -7,9 +7,9 @@ import (
 
 func Test_inputDense_forward(t *testing.T) {
 	type fields struct {
-		synapses           [][]float64
-		nextLayerSize      int
-		currLayerSize      int
+		synapses      [][]float64
+		nextLayerSize int
+		currLayerSize int
 	}
 	type args struct {
 		input []float64
@@ -20,14 +20,23 @@ func Test_inputDense_forward(t *testing.T) {
 		args       args
 		wantOutput [][]float64
 	}{
-	// TODO: Add test cases.
+		{
+			name: "testForwardProp",
+			fields: fields{
+				synapses:      [][]float64{{1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}},
+				nextLayerSize: 5,
+				currLayerSize: 3,
+			},
+			args:       args{[]float64{1, 2, 3}},
+			wantOutput: [][]float64{{1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}, {1.0, 2.0, 3.0}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &inputDense{
-				synapses:           tt.fields.synapses,
-				nextLayerSize:      tt.fields.nextLayerSize,
-				currLayerSize:      tt.fields.currLayerSize,
+				synapses:      tt.fields.synapses,
+				nextLayerSize: tt.fields.nextLayerSize,
+				currLayerSize: tt.fields.currLayerSize,
 			}
 			if gotOutput := l.forward(tt.args.input); !reflect.DeepEqual(gotOutput, tt.wantOutput) {
 				t.Errorf("inputDense.forward() = %v, want %v", gotOutput, tt.wantOutput)

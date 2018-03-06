@@ -39,11 +39,8 @@ func (l *inputDense) forward(input []float64) (output [][]float64) {
 	l.input = input
 
 	output = make([][]float64, l.nextLayerSize)
-	for i := 0; i < l.nextLayerSize-1; i++ {
+	for i := 0; i < l.nextLayerSize; i++ {
 		for j, v := range input {
-			if output[i] == nil {
-				output[i] = make([]float64, l.currLayerSize)
-			}
 			output[i] = append(output[i], l.synapses[j][i]*v)
 		}
 	}

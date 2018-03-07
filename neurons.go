@@ -4,6 +4,8 @@ and weight it by the feed-forward signal a_{l-1}feeding into that layer!
 */
 package go_deep
 
+import "fmt"
+
 type inputLayer interface {
 	synapseInitializer
 	forward([]float64) [][]float64
@@ -38,8 +40,9 @@ type inputDense struct {
 func (l *inputDense) forward(input []float64) (output [][]float64) {
 	l.input = input
 
-	output = make([][]float64, l.nextLayerSize)
-	for i := 0; i < l.nextLayerSize; i++ {
+	// Exclude bias synapse
+	output = make([][]float64, l.nextLayerSize-1)
+	for i := 0; i < l.nextLayerSize-1; i++ {
 		for j, v := range input {
 			output[i] = append(output[i], l.synapses[j][i]*v)
 		}
@@ -123,12 +126,10 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 
 	for i := 0; i < l.nextLayerSize; i++ {
 		for j, a := range l.activated {
-			if output[i] == nil {
-				output[i] = make([]float64, l.currLayerSize)
-			}
-			output[i][j] = l.synapses[j][i] * a
+			fmt.Println(j, i, l.synapses[j][i])
+			output[i] = append(output[i], l.synapses[j][i] * a)
 		}
-		output[i][l.currLayerSize-1] = l.synapses[l.currLayerSize-1][i]
+		output[i] = append(output[i], l.synapses[l.currLayerSize-1][i])
 	}
 
 	return

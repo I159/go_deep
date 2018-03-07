@@ -23,21 +23,20 @@ func Test_inputDense_forward(t *testing.T) {
 		{
 			name: "testForwardProp",
 			fields: fields{
-				synapses:      [][]float64{
-					{1.0, 10.0, 100.0, 1000.0, 10000.0},
-					{2.0, 20.0, 200.0, 2000.0, 20000.0},
-					{3.0, 30.0, 300.0, 3000.0, 30000.0},
+				synapses: [][]float64{
+					{1.0, 10.0, 100.0, 1000.0},
+					{2.0, 20.0, 200.0, 2000.0},
+					{3.0, 30.0, 300.0, 3000.0},
 				},
 				nextLayerSize: 5,
 				currLayerSize: 3,
 			},
-			args:       args{[]float64{1, 2, 3}},
+			args: args{[]float64{1, 2, 3}},
 			wantOutput: [][]float64{
-				{1.0, 4.0, 9.0},
+				{0.0, 4.0, 9.0},
 				{10.0, 40.0, 90.0},
 				{100.0, 400.0, 900.0},
 				{1000.0, 4000.0, 9000.0},
-				{10000.0, 40000.0, 90000.0},
 			},
 		},
 	}
@@ -55,6 +54,16 @@ func Test_inputDense_forward(t *testing.T) {
 	}
 }
 
+type mockActivation struct{}
+
+func (ma *mockActivation) activate(n float64) (float64, error) {
+	return n, nil
+}
+
+func (ma *mockActivation) actDerivative(n float64) (float64, error) {
+	return n, nil
+}
+
 func Test_hiddenDense_forward(t *testing.T) {
 	type fields struct {
 		activation         activation
@@ -63,10 +72,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 		currLayerSize      int
 		nextLayerSize      int
 		learningRate       float64
-		corrections        [][]float64
 		synapses           [][]float64
-		activated          []float64
-		input              []float64
 	}
 	type args struct {
 		input [][]float64
@@ -78,21 +84,42 @@ func Test_hiddenDense_forward(t *testing.T) {
 		wantOutput [][]float64
 		wantErr    bool
 	}{
-	// TODO: Add test cases.
+		{
+			name: "forwardHidden",
+			fields: fields{
+				activation:    new(mockActivation),
+				prevLayerSize: 4,
+				currLayerSize: 5,
+				nextLayerSize: 3,
+				synapses: [][]float64{
+					{1, 10, 100},
+					{2, 20, 200},
+					{3, 30, 300},
+					{4, 40, 400},
+					{5, 50, 500},
+				},
+			},
+			args: args{
+				[][]float64{
+					{1, 2, 3, 4},
+					{1, 2, 3, 4},
+					{1, 2, 3, 4},
+					{1, 2, 3, 4},
+					{1, 2, 3, 4},
+				},
+			},
+			wantOutput: [][]float64{{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {1, 2, 3}},
+			wantErr:    false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &hiddenDense{
-				activation:         tt.fields.activation,
-				synapseInitializer: tt.fields.synapseInitializer,
-				prevLayerSize:      tt.fields.prevLayerSize,
-				currLayerSize:      tt.fields.currLayerSize,
-				nextLayerSize:      tt.fields.nextLayerSize,
-				learningRate:       tt.fields.learningRate,
-				corrections:        tt.fields.corrections,
-				synapses:           tt.fields.synapses,
-				activated:          tt.fields.activated,
-				input:              tt.fields.input,
+				activation:    tt.fields.activation,
+				prevLayerSize: tt.fields.prevLayerSize,
+				currLayerSize: tt.fields.currLayerSize,
+				nextLayerSize: tt.fields.nextLayerSize,
+				synapses:      tt.fields.synapses,
 			}
 			gotOutput, err := l.forward(tt.args.input)
 			if (err != nil) != tt.wantErr {

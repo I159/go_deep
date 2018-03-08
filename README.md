@@ -2,7 +2,7 @@
 
 ## Motivation
 
-This is my personal education project. Things I want to train and learn with this project: AI deep learning basics, Go IoC architecture approaches, Go programs performance optimization and profiling, design tools for distributed systems. The goal is to assemble a flexible and efficient deep learning framework on pure Go. Further plan is to implement GPU computations support and make it possible to use the library for distributed systems.
+This is my personal educational project. Things I want to train and learn with this project: AI deep learning basics, Go IoC architecture approaches, Go programs performance optimization and profiling, design tools for distributed systems. The goal is to assemble a flexible and efficient deep learning framework on pure Go. Further plan is to implement GPU computations support and make it possible to use the library for distributed systems.
 
 ## Installation
 

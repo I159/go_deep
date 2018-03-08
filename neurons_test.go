@@ -135,10 +135,19 @@ func Test_hiddenDense_forward(t *testing.T) {
 	}
 }
 
+type mockCost struct{}
+
+func (c *mockCost) costDerivative(float64, float64) float64 {
+	return 1
+}
+
+func (c *mockCost) countCost([]float64, []float64) float64 {
+	return 1
+}
+
 func Test_outputDense_forward(t *testing.T) {
 	type fields struct {
 		activation    activation
-		input         []float64
 		cost          cost
 		prevLayerSize int
 	}
@@ -152,13 +161,21 @@ func Test_outputDense_forward(t *testing.T) {
 		wantOutput []float64
 		wantErr    bool
 	}{
-	// TODO: Add test cases.
+		{
+			name: "outputForward",
+			fields: fields{
+				activation: &mockActivation{},
+				cost: &mockCost{},
+				prevLayerSize: 5,
+			},
+			args:       args{[][]float64{}},
+			wantOutput: []float64{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &outputDense{
 				activation:    tt.fields.activation,
-				input:         tt.fields.input,
 				cost:          tt.fields.cost,
 				prevLayerSize: tt.fields.prevLayerSize,
 			}

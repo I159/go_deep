@@ -162,6 +162,9 @@ func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err
 			l.corrections[j][i] += eRR * a
 		}
 		// Apply bias error signal
+		if l.corrections[l.currLayerSize-1] == nil {
+			l.corrections[l.currLayerSize-1] = make([]float64, l.nextLayerSize)
+		}
 		l.corrections[l.currLayerSize-1][i] += eRR
 	}
 

@@ -105,8 +105,8 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64, err err
 }
 
 type InputShape struct {
-	Size         int
-	LearningRate float64
+	Size               int
+	LearningRate, Bias float64
 }
 type HiddenShape struct {
 	Size               int
@@ -122,7 +122,7 @@ type OutputShape struct {
 
 func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShape OutputShape) Network {
 	return &Perceptron{
-		input: newInputDense(inputShape.Size, hiddenShapes[0].Size, inputShape.LearningRate),
+		input: newInputDense(inputShape.Size, hiddenShapes[0].Size, inputShape.LearningRate, inputShape.Bias),
 		hidden: []hiddenLayer{
 			newHiddenDense(
 				inputShape.Size,

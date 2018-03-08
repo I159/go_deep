@@ -129,11 +129,15 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 	// nextLayerSize-1 output slices.
 	// A hidden layer is the last one - return nextLayerSize output slices.
 	// Also don't multiply activated values by a bias, append bias itself into output slices. 
-	for i := 0; i < l.nextLayerSize; i++ {
+	var nextLayerBias int
+	if !l.lastHidden {
+		nextLayerBias = 1
+	}
+	for i := 0; i < l.nextLayerSize - nextLayerBias; i++ {
 		for j, a := range l.activated {
 			output[i] = append(output[i], l.synapses[j][i]*a)
 		}
-		output[i] = append(output[i], l.synapses[l.currLayerSize-2][i])
+		output[i] = append(output[i], l.synapses[l.currLayerSize-1][i])
 	}
 
 	return

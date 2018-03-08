@@ -160,9 +160,9 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64, err
 
 	// Propagate backward
 	var eRRSum, actDer float64
-	for i := range l.synapses {
+	for i, v := range l.input {
 
-		actDer, err = l.actDerivative(l.input[i])
+		actDer, err = l.actDerivative(v)
 		if err != nil {
 			return
 		}
@@ -173,6 +173,7 @@ func (l *hiddenDense) backward(eRRors []float64) (nextLayerErrors []float64, err
 		}
 		nextLayerErrors = append(nextLayerErrors, actDer*eRRSum)
 	}
+	// nextLayerErrors = append(nextLayerErrors, eRRsum)
 
 	return
 }

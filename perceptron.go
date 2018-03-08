@@ -131,6 +131,7 @@ func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShap
 				hiddenShapes[0].Bias,
 				hiddenShapes[0].LearningRate,
 				hiddenShapes[0].Activation,
+				true,
 			),
 		},
 		output: newOutput(hiddenShapes[0].Size, outputShape.Size, outputShape.Activation, outputShape.Cost),

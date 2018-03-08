@@ -4,8 +4,6 @@ and weight it by the feed-forward signal a_{l-1}feeding into that layer!
 */
 package go_deep
 
-import "fmt"
-
 type inputLayer interface {
 	synapseInitializer
 	forward([]float64) [][]float64
@@ -96,6 +94,7 @@ type hiddenDense struct {
 	learningRate                                float64
 	corrections, synapses                       [][]float64
 	activated, input                            []float64
+	lastHidden                                  bool
 }
 
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error) {
@@ -124,12 +123,17 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 		l.activated = append(l.activated, actValue)
 	}
 
+	// TODO: take into account biases
+	// There are two cases:
+	// A hidden layer is not the last one and a next layer has bias too - we need to return
+	// nextLayerSize-1 output slices.
+	// A hidden layer is the last one - return nextLayerSize output slices.
+	// Also don't multiply activated values by a bias, append bias itself into output slices. 
 	for i := 0; i < l.nextLayerSize; i++ {
 		for j, a := range l.activated {
-			fmt.Println(j, i, l.synapses[j][i])
-			output[i] = append(output[i], l.synapses[j][i] * a)
+			output[i] = append(output[i], l.synapses[j][i]*a)
 		}
-		output[i] = append(output[i], l.synapses[l.currLayerSize-1][i])
+		output[i] = append(output[i], l.synapses[l.currLayerSize-2][i])
 	}
 
 	return
@@ -178,7 +182,7 @@ func (l *hiddenDense) applyCorrections(batchSize float64) {
 	l.corrections = nil
 }
 
-func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation activation) hiddenLayer {
+func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation activation, lastHidden bool) hiddenLayer {
 	layer := &hiddenDense{
 		activation: activation,
 		synapseInitializer: &hiddenDenseSynapses{
@@ -193,6 +197,7 @@ func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation
 		currLayerSize: curr,
 		nextLayerSize: next,
 		learningRate:  learningRate,
+		lastHidden:    lastHidden,
 	}
 	layer.synapses = layer.init()
 	return layer

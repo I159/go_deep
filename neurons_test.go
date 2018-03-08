@@ -33,7 +33,7 @@ func Test_inputDense_forward(t *testing.T) {
 			},
 			args: args{[]float64{1, 2, 3}},
 			wantOutput: [][]float64{
-				{0.0, 4.0, 9.0},
+				{1.0, 4.0, 9.0},
 				{10.0, 40.0, 90.0},
 				{100.0, 400.0, 900.0},
 				{1000.0, 4000.0, 9000.0},
@@ -73,6 +73,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 		nextLayerSize      int
 		learningRate       float64
 		synapses           [][]float64
+		lastHidden         bool
 	}
 	type args struct {
 		input [][]float64
@@ -85,7 +86,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 		wantErr    bool
 	}{
 		{
-			name: "forwardHidden",
+			name: "forwardLastHidden",
 			fields: fields{
 				activation:    new(mockActivation),
 				prevLayerSize: 4,
@@ -96,8 +97,9 @@ func Test_hiddenDense_forward(t *testing.T) {
 					{2, 20, 200},
 					{3, 30, 300},
 					{4, 40, 400},
-					{5, 50, 500},
+					{5, 5, 5},
 				},
+				lastHidden: true,
 			},
 			args: args{
 				[][]float64{
@@ -105,10 +107,9 @@ func Test_hiddenDense_forward(t *testing.T) {
 					{1, 2, 3, 4},
 					{1, 2, 3, 4},
 					{1, 2, 3, 4},
-					{1, 2, 3, 4},
 				},
 			},
-			wantOutput: [][]float64{{1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {1, 2, 3}},
+			wantOutput: [][]float64{{10, 20, 30, 40, 5}, {100, 200, 300, 400, 5}, {1000, 2000, 3000, 4000, 5}},
 			wantErr:    false,
 		},
 	}
@@ -120,6 +121,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 				currLayerSize: tt.fields.currLayerSize,
 				nextLayerSize: tt.fields.nextLayerSize,
 				synapses:      tt.fields.synapses,
+				lastHidden:    tt.fields.lastHidden,
 			}
 			gotOutput, err := l.forward(tt.args.input)
 			if (err != nil) != tt.wantErr {

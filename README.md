@@ -2,7 +2,7 @@
 
 ## Motivation
 
-This is my personal education project. Things I want to train and learn with this project: AI deep learning basics, Go IoC architecture approaches, Go programs performance optimization and profiling. The goal is to assemble a flexible and efficient deep learning framework on pure Go.
+This is my personal education project. Things I want to train and learn with this project: AI deep learning basics, Go IoC architecture approaches, Go programs performance optimization and profiling, design tools for distributed systems. The goal is to assemble a flexible and efficient deep learning framework on pure Go. Further plan is to implement GPU computations support and make it possible to use the library for distributed systems.
 
 ## Installation
 
@@ -18,4 +18,4 @@ If you have the same goals of learning or/and you have more solid math or archit
 
 ## Current state of the project
 
-Perceptron (aka dense neural network) is implemented with ability to add different activation and cost functions.
+Perceptron (aka dense neural network) is under development.

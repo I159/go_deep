@@ -277,17 +277,17 @@ func Test_inputDense_backward(t *testing.T) {
 
 func Test_hiddenDense_backward(t *testing.T) {
 	type fields struct {
-		activation         activation
-		synapseInitializer synapseInitializer
-		prevLayerSize      int
-		currLayerSize      int
-		nextLayerSize      int
-		learningRate       float64
-		corrections        [][]float64
-		synapses           [][]float64
-		activated          []float64
-		input              []float64
-		lastHidden         bool
+		activation activation
+		//synapseInitializer synapseInitializer
+		prevLayerSize int
+		currLayerSize int
+		nextLayerSize int
+		//learningRate       float64
+		//corrections        [][]float64
+		synapses   [][]float64
+		activated  []float64
+		input      []float64
+		lastHidden bool
 	}
 	type args struct {
 		eRRors []float64
@@ -299,22 +299,39 @@ func Test_hiddenDense_backward(t *testing.T) {
 		wantPrevLayerErrors []float64
 		wantErr             bool
 	}{
-	// TODO: Add test cases.
+		{
+			name: "hiddenBackward",
+			fields: fields{
+				activation:    &mockActivation{2},
+				prevLayerSize: 4,
+				currLayerSize: 5,
+				nextLayerSize: 3,
+				input:         []float64{1, 2, 3, 4},
+				synapses: [][]float64{
+					{1, 2, 3},
+					{10, 20, 30},
+					{100, 200, 300},
+					{1000, 2000, 3000},
+					{5, 5, 5}},
+			},
+			args:                args{[]float64{1, 2, 3}},
+			wantPrevLayerErrors: []float64{1, 2, 3, 4},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &hiddenDense{
-				activation:         tt.fields.activation,
-				synapseInitializer: tt.fields.synapseInitializer,
-				prevLayerSize:      tt.fields.prevLayerSize,
-				currLayerSize:      tt.fields.currLayerSize,
-				nextLayerSize:      tt.fields.nextLayerSize,
-				learningRate:       tt.fields.learningRate,
-				corrections:        tt.fields.corrections,
-				synapses:           tt.fields.synapses,
-				activated:          tt.fields.activated,
-				input:              tt.fields.input,
-				lastHidden:         tt.fields.lastHidden,
+				activation: tt.fields.activation,
+				//synapseInitializer: tt.fields.synapseInitializer,
+				//prevLayerSize:      tt.fields.prevLayerSize,
+				currLayerSize: tt.fields.currLayerSize,
+				nextLayerSize: tt.fields.nextLayerSize,
+				//learningRate:       tt.fields.learningRate,
+				//corrections:        tt.fields.corrections,
+				synapses:   tt.fields.synapses,
+				activated:  tt.fields.activated,
+				input:      tt.fields.input,
+				lastHidden: tt.fields.lastHidden,
 			}
 			gotPrevLayerErrors, err := l.backward(tt.args.eRRors)
 			if (err != nil) != tt.wantErr {

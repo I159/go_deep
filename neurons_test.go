@@ -54,16 +54,14 @@ func Test_inputDense_forward(t *testing.T) {
 	}
 }
 
-type mockActivation struct {
-	coeff float64
-}
+type mockActivation struct{}
 
 func (ma *mockActivation) activate(n float64) (float64, error) {
-	return n * ma.coeff, nil
+	return n, nil
 }
 
 func (ma *mockActivation) actDerivative(n float64) (float64, error) {
-	return n / ma.coeff, nil
+	return n, nil
 }
 
 func Test_hiddenDense_forward(t *testing.T) {
@@ -90,7 +88,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 		{
 			name: "forwardLastHidden",
 			fields: fields{
-				activation:    &mockActivation{1},
+				activation:    new(mockActivation),
 				prevLayerSize: 4,
 				currLayerSize: 5,
 				nextLayerSize: 3,
@@ -140,7 +138,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 type mockCost struct{ coeff float64 }
 
 func (c *mockCost) costDerivative(pred, label float64) float64 {
-	return (pred - label) / c.coeff
+	return pred - label
 }
 
 func (c *mockCost) countCost([]float64, []float64) float64 {
@@ -166,12 +164,12 @@ func Test_outputDense_forward(t *testing.T) {
 		{
 			name: "outputForward",
 			fields: fields{
-				activation:    &mockActivation{2},
-				cost:          &mockCost{},
+				activation:    new(mockActivation),
+				cost:          new(mockCost),
 				prevLayerSize: 5,
 			},
 			args:       args{[][]float64{{1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}}},
-			wantOutput: []float64{30, 30, 30},
+			wantOutput: []float64{15, 15, 15},
 		},
 	}
 	for _, tt := range tests {
@@ -302,7 +300,7 @@ func Test_hiddenDense_backward(t *testing.T) {
 		{
 			name: "hiddenBackward",
 			fields: fields{
-				activation:    &mockActivation{2},
+				activation:    new(mockActivation),
 				prevLayerSize: 4,
 				currLayerSize: 5,
 				nextLayerSize: 3,
@@ -366,16 +364,16 @@ func Test_outputDense_backward(t *testing.T) {
 		{
 			name: "backwardOutput",
 			fields: fields{
-				activation:    &mockActivation{2},
-				cost:          &mockCost{2},
+				activation:    new(mockActivation),
+				cost:          new(mockCost),
 				prevLayerSize: 5,
-				input:         []float64{5, 10, 15},
+				input:         []float64{1, 2, 3},
 			},
 			args: args{
-				prediction: []float64{.25, .75, .25},
-				labels:     []float64{1., .0, .0},
+				prediction: []float64{2, 3, 4},
+				labels:     []float64{1, 1, 1},
 			},
-			wantERRors: []float64{-0.9375, 1.875, 0.9375},
+			wantERRors: []float64{1, 4, 9},
 		},
 	}
 	for _, tt := range tests {

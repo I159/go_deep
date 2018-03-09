@@ -54,14 +54,16 @@ func Test_inputDense_forward(t *testing.T) {
 	}
 }
 
-type mockActivation struct{}
+type mockActivation struct {
+	coeff float64
+}
 
 func (ma *mockActivation) activate(n float64) (float64, error) {
-	return n, nil
+	return n * ma.coeff, nil
 }
 
 func (ma *mockActivation) actDerivative(n float64) (float64, error) {
-	return n, nil
+	return n / ma.coeff, nil
 }
 
 func Test_hiddenDense_forward(t *testing.T) {
@@ -88,7 +90,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 		{
 			name: "forwardLastHidden",
 			fields: fields{
-				activation:    new(mockActivation),
+				activation:    &mockActivation{1},
 				prevLayerSize: 4,
 				currLayerSize: 5,
 				nextLayerSize: 3,
@@ -135,10 +137,10 @@ func Test_hiddenDense_forward(t *testing.T) {
 	}
 }
 
-type mockCost struct{}
+type mockCost struct{ coeff float64 }
 
-func (c *mockCost) costDerivative(float64, float64) float64 {
-	return 1
+func (c *mockCost) costDerivative(pred, label float64) float64 {
+	return (pred - label) / c.coeff
 }
 
 func (c *mockCost) countCost([]float64, []float64) float64 {
@@ -164,12 +166,12 @@ func Test_outputDense_forward(t *testing.T) {
 		{
 			name: "outputForward",
 			fields: fields{
-				activation: &mockActivation{},
-				cost: &mockCost{},
+				activation:    &mockActivation{2},
+				cost:          &mockCost{},
 				prevLayerSize: 5,
 			},
-			args:       args{[][]float64{}},
-			wantOutput: []float64{},
+			args:       args{[][]float64{{1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}}},
+			wantOutput: []float64{30, 30, 30},
 		},
 	}
 	for _, tt := range tests {
@@ -230,6 +232,150 @@ func Test_outputDense_forwardMeasure(t *testing.T) {
 			}
 			if gotCost != tt.wantCost {
 				t.Errorf("outputDense.forwardMeasure() gotCost = %v, want %v", gotCost, tt.wantCost)
+			}
+		})
+	}
+}
+
+func Test_inputDense_backward(t *testing.T) {
+	type fields struct {
+		synapseInitializer synapseInitializer
+		corrections        [][]float64
+		synapses           [][]float64
+		nextLayerSize      int
+		currLayerSize      int
+		learningRate       float64
+		input              []float64
+		bias               float64
+	}
+	type args struct {
+		eRRors []float64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &inputDense{
+				synapseInitializer: tt.fields.synapseInitializer,
+				corrections:        tt.fields.corrections,
+				synapses:           tt.fields.synapses,
+				nextLayerSize:      tt.fields.nextLayerSize,
+				currLayerSize:      tt.fields.currLayerSize,
+				learningRate:       tt.fields.learningRate,
+				input:              tt.fields.input,
+				bias:               tt.fields.bias,
+			}
+			l.backward(tt.args.eRRors)
+		})
+	}
+}
+
+func Test_hiddenDense_backward(t *testing.T) {
+	type fields struct {
+		activation         activation
+		synapseInitializer synapseInitializer
+		prevLayerSize      int
+		currLayerSize      int
+		nextLayerSize      int
+		learningRate       float64
+		corrections        [][]float64
+		synapses           [][]float64
+		activated          []float64
+		input              []float64
+		lastHidden         bool
+	}
+	type args struct {
+		eRRors []float64
+	}
+	tests := []struct {
+		name                string
+		fields              fields
+		args                args
+		wantPrevLayerErrors []float64
+		wantErr             bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &hiddenDense{
+				activation:         tt.fields.activation,
+				synapseInitializer: tt.fields.synapseInitializer,
+				prevLayerSize:      tt.fields.prevLayerSize,
+				currLayerSize:      tt.fields.currLayerSize,
+				nextLayerSize:      tt.fields.nextLayerSize,
+				learningRate:       tt.fields.learningRate,
+				corrections:        tt.fields.corrections,
+				synapses:           tt.fields.synapses,
+				activated:          tt.fields.activated,
+				input:              tt.fields.input,
+				lastHidden:         tt.fields.lastHidden,
+			}
+			gotPrevLayerErrors, err := l.backward(tt.args.eRRors)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("hiddenDense.backward() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotPrevLayerErrors, tt.wantPrevLayerErrors) {
+				t.Errorf("hiddenDense.backward() = %v, want %v", gotPrevLayerErrors, tt.wantPrevLayerErrors)
+			}
+		})
+	}
+}
+
+func Test_outputDense_backward(t *testing.T) {
+	type fields struct {
+		activation    activation
+		cost          cost
+		prevLayerSize int
+		input         []float64
+	}
+	type args struct {
+		prediction []float64
+		labels     []float64
+	}
+	tests := []struct {
+		name       string
+		fields     fields
+		args       args
+		wantERRors []float64
+		wantErr    bool
+	}{
+		{
+			name: "backwardOutput",
+			fields: fields{
+				activation:    &mockActivation{2},
+				cost:          &mockCost{2},
+				prevLayerSize: 5,
+				input:         []float64{5, 10, 15},
+			},
+			args: args{
+				prediction: []float64{.25, .75, .25},
+				labels:     []float64{1., .0, .0},
+			},
+			wantERRors: []float64{-0.9375, 1.875, 0.9375},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &outputDense{
+				activation:    tt.fields.activation,
+				cost:          tt.fields.cost,
+				prevLayerSize: tt.fields.prevLayerSize,
+				input:         tt.fields.input,
+			}
+			gotERRors, err := l.backward(tt.args.prediction, tt.args.labels)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("outputDense.backward() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotERRors, tt.wantERRors) {
+				t.Errorf("outputDense.backward() = %v, want %v", gotERRors, tt.wantERRors)
 			}
 		})
 	}

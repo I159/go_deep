@@ -148,7 +148,7 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 	return
 }
 
-func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err error) {
+func (l *hiddenDense) updateCorrections(eRRors []float64) [][]float64 {
 	// Collect corrections for further forward error propagation
 	if l.corrections == nil {
 		l.corrections = make([][]float64, l.currLayerSize)
@@ -167,7 +167,11 @@ func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err
 		}
 		l.corrections[l.currLayerSize-1][i] += eRR
 	}
+	return l.corrections
+}
 
+func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err error) {
+	l.corrections = l.updateCorrections(eRRors)
 	// Propagate backward
 	var eRRSum, actDer float64
 	for i, v := range l.input {

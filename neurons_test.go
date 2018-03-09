@@ -275,17 +275,14 @@ func Test_inputDense_backward(t *testing.T) {
 
 func Test_hiddenDense_backward(t *testing.T) {
 	type fields struct {
-		activation activation
-		//synapseInitializer synapseInitializer
+		activation    activation
 		prevLayerSize int
 		currLayerSize int
 		nextLayerSize int
-		//learningRate       float64
-		//corrections        [][]float64
-		synapses   [][]float64
-		activated  []float64
-		input      []float64
-		lastHidden bool
+		synapses      [][]float64
+		activated     []float64
+		input         []float64
+		lastHidden    bool
 	}
 	type args struct {
 		eRRors []float64
@@ -313,23 +310,19 @@ func Test_hiddenDense_backward(t *testing.T) {
 					{5, 5, 5}},
 			},
 			args:                args{[]float64{1, 2, 3}},
-			wantPrevLayerErrors: []float64{1, 2, 3, 4},
+			wantPrevLayerErrors: []float64{14, 280, 4200, 56000},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &hiddenDense{
-				activation: tt.fields.activation,
-				//synapseInitializer: tt.fields.synapseInitializer,
-				//prevLayerSize:      tt.fields.prevLayerSize,
+				activation:    tt.fields.activation,
 				currLayerSize: tt.fields.currLayerSize,
 				nextLayerSize: tt.fields.nextLayerSize,
-				//learningRate:       tt.fields.learningRate,
-				//corrections:        tt.fields.corrections,
-				synapses:   tt.fields.synapses,
-				activated:  tt.fields.activated,
-				input:      tt.fields.input,
-				lastHidden: tt.fields.lastHidden,
+				synapses:      tt.fields.synapses,
+				activated:     tt.fields.activated,
+				input:         tt.fields.input,
+				lastHidden:    tt.fields.lastHidden,
 			}
 			gotPrevLayerErrors, err := l.backward(tt.args.eRRors)
 			if (err != nil) != tt.wantErr {

@@ -388,3 +388,47 @@ func Test_outputDense_backward(t *testing.T) {
 		})
 	}
 }
+
+func Test_hiddenDense_updateCorrections(t *testing.T) {
+	type fields struct {
+		currLayerSize int
+		nextLayerSize int
+		//synapses      [][]float64
+		activated []float64
+	}
+	type args struct {
+		eRRors []float64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   [][]float64
+	}{
+		{
+			name: "updateCorrectionsHiddenToOutput",
+			fields: fields{
+				currLayerSize: 5,
+				nextLayerSize: 3,
+				activated: []float64{2, 3, 4, 5},
+			},
+			args: args{[]float64{1, 4, 9}},
+			want: [][]float64{
+				{2, 8, 18}, {3, 12, 27}, {4, 16, 36}, {5, 20, 45}, {1, 4, 9},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &hiddenDense{
+				currLayerSize: tt.fields.currLayerSize,
+				nextLayerSize: tt.fields.nextLayerSize,
+				//synapses:      tt.fields.synapses,
+				activated: tt.fields.activated,
+			}
+			if got := l.updateCorrections(tt.args.eRRors); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("hiddenDense.updateCorrections() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

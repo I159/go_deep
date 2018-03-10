@@ -128,12 +128,6 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 		l.activated = append(l.activated, actValue)
 	}
 
-	// TODO: take into account biases
-	// There are two cases:
-	// A hidden layer is not the last one and a next layer has bias too - we need to return
-	// nextLayerSize-1 output slices.
-	// A hidden layer is the last one - return nextLayerSize output slices.
-	// Also don't multiply activated values by a bias, append bias itself into output slices.
 	var nextLayerBias int
 	if !l.lastHidden {
 		nextLayerBias = 1

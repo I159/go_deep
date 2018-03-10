@@ -25,11 +25,11 @@ func (n *Perceptron) backward(prediction []float64, labels []float64) (err error
 	return nil
 }
 
-func (l *Perceptron) applyCorrections(batchSize float64) {
+func (l *Perceptron) applyCorrections(batchSize float64) error {
 	for _, l := range l.hidden {
 		l.applyCorrections(batchSize)
 	}
-	l.input.applyCorrections(batchSize)
+	return l.input.applyCorrections(batchSize)
 }
 
 func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) ([]float64, error) {
@@ -43,7 +43,10 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) ([]fl
 		fmt.Printf("Epochs: %d\n", j+1)
 		for i, v := range set {
 			if batchCounter >= batchSize {
-				n.applyCorrections(float64(batchSize))
+				err := n.applyCorrections(float64(batchSize))
+				if err != nil {
+					return nil, err
+				}
 				costGradient = append(costGradient, localCost/float64(batchSize))
 				batchCounter = 0
 				localCost = 0

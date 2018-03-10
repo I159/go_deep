@@ -394,7 +394,6 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 	type fields struct {
 		currLayerSize int
 		nextLayerSize int
-		//synapses      [][]float64
 		activated []float64
 	}
 	type args struct {
@@ -424,7 +423,6 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 			l := &hiddenDense{
 				currLayerSize: tt.fields.currLayerSize,
 				nextLayerSize: tt.fields.nextLayerSize,
-				//synapses:      tt.fields.synapses,
 				activated: tt.fields.activated,
 			}
 			if got := l.updateCorrections(tt.args.eRRors); !reflect.DeepEqual(got, tt.want) {

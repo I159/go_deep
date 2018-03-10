@@ -4,6 +4,8 @@ and weight it by the feed-forward signal a_{l-1}feeding into that layer!
 */
 package go_deep
 
+import "fmt"
+
 type inputLayer interface {
 	synapseInitializer
 	forward([]float64) [][]float64
@@ -67,13 +69,20 @@ func (l *inputDense) backward(eRRors []float64) {
 	}
 }
 
-func (l *inputDense) applyCorrections(batchSize float64) {
+func (l *inputDense) applyCorrections(batchSize float64) error {
+	if len(l.corrections) < l.currLayerSize {
+		return fmt.Errorf(
+			"Inappropriate corrections size: %d. Possibly corrections were not updated.",
+			len(corrections),
+		)
+	}
 	for i := 0; i < l.currLayerSize; i++ {
 		for j := 0; j < l.nextLayerSize; j++ {
 			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
 	l.corrections = nil
+	return nil
 }
 
 func newInputDense(curr, next int, learningRate, bias float64) inputLayer {
@@ -189,8 +198,8 @@ func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err
 }
 
 func (l *hiddenDense) applyCorrections(batchSize float64) {
-	for i  :=0;i <l.currLayerSize;i++{
-		for j:=0;j<l.nextLayerSize;j++{
+	for i := 0; i < l.currLayerSize; i++ {
+		for j := 0; j < l.nextLayerSize; j++ {
 			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}

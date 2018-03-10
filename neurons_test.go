@@ -302,6 +302,7 @@ func Test_hiddenDense_backward(t *testing.T) {
 				currLayerSize: 5,
 				nextLayerSize: 3,
 				input:         []float64{1, 2, 3, 4},
+				activated:     []float64{1, 2, 3, 4},
 				synapses: [][]float64{
 					{1, 2, 3},
 					{10, 20, 30},
@@ -410,7 +411,7 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 			fields: fields{
 				currLayerSize: 5,
 				nextLayerSize: 3,
-				activated: []float64{2, 3, 4, 5},
+				activated:     []float64{2, 3, 4, 5},
 			},
 			args: args{[]float64{1, 4, 9}},
 			want: [][]float64{
@@ -429,6 +430,84 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 			if got := l.updateCorrections(tt.args.eRRors); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("hiddenDense.updateCorrections() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_inputDense_applyCorrections(t *testing.T) {
+	type fields struct {
+		corrections   [][]float64
+		synapses      [][]float64
+		nextLayerSize int
+		currLayerSize int
+		learningRate  float64
+		input         []float64
+	}
+	type args struct {
+		batchSize float64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &inputDense{
+				corrections:   tt.fields.corrections,
+				synapses:      tt.fields.synapses,
+				nextLayerSize: tt.fields.nextLayerSize,
+				currLayerSize: tt.fields.currLayerSize,
+				learningRate:  tt.fields.learningRate,
+				input:         tt.fields.input,
+			}
+			l.applyCorrections(tt.args.batchSize)
+		})
+	}
+}
+
+func Test_hiddenDense_applyCorrections(t *testing.T) {
+	type fields struct {
+		activation         activation
+		synapseInitializer synapseInitializer
+		prevLayerSize      int
+		currLayerSize      int
+		nextLayerSize      int
+		learningRate       float64
+		corrections        [][]float64
+		synapses           [][]float64
+		activated          []float64
+		input              []float64
+		lastHidden         bool
+	}
+	type args struct {
+		batchSize float64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &hiddenDense{
+				activation:         tt.fields.activation,
+				synapseInitializer: tt.fields.synapseInitializer,
+				prevLayerSize:      tt.fields.prevLayerSize,
+				currLayerSize:      tt.fields.currLayerSize,
+				nextLayerSize:      tt.fields.nextLayerSize,
+				learningRate:       tt.fields.learningRate,
+				corrections:        tt.fields.corrections,
+				synapses:           tt.fields.synapses,
+				activated:          tt.fields.activated,
+				input:              tt.fields.input,
+				lastHidden:         tt.fields.lastHidden,
+			}
+			l.applyCorrections(tt.args.batchSize)
 		})
 	}
 }

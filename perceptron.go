@@ -70,7 +70,11 @@ func (n *Perceptron) forward(rowInput []float64) ([]float64, error) {
 	var fwdProp [][]float64
 	var err error
 
-	fwdProp = n.input.forward(rowInput)
+	fwdProp, err = n.input.forward(rowInput)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, l := range n.hidden {
 		fwdProp, err = l.forward(fwdProp)
 		if err != nil {
@@ -82,7 +86,12 @@ func (n *Perceptron) forward(rowInput []float64) ([]float64, error) {
 
 func (n *Perceptron) forwardMeasure(rowInput, labels []float64) (prediction []float64, cost float64, err error) {
 	var fwdProp [][]float64
-	fwdProp = n.input.forward(rowInput)
+
+	fwdProp, err = n.input.forward(rowInput)
+	if err != nil {
+		return nil, 0, err
+	}
+
 	for _, l := range n.hidden {
 		fwdProp, err = l.forward(fwdProp)
 		if err != nil {

@@ -19,6 +19,7 @@ func Test_inputDense_forward(t *testing.T) {
 		fields     fields
 		args       args
 		wantOutput [][]float64
+		wantErr    bool
 	}{
 		{
 			name: "testForwardProp",
@@ -47,7 +48,12 @@ func Test_inputDense_forward(t *testing.T) {
 				nextLayerSize: tt.fields.nextLayerSize,
 				currLayerSize: tt.fields.currLayerSize,
 			}
-			if gotOutput := l.forward(tt.args.input); !reflect.DeepEqual(gotOutput, tt.wantOutput) {
+			gotOutput, err := l.forward(tt.args.input)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("inputDense.forward() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotOutput, tt.wantOutput) {
 				t.Errorf("inputDense.forward() = %v, want %v", gotOutput, tt.wantOutput)
 			}
 		})
@@ -147,9 +153,9 @@ func (c *mockCost) countCost([]float64, []float64) float64 {
 
 func Test_outputDense_forward(t *testing.T) {
 	type fields struct {
-		activation    activation
-		cost          cost
-		prevLayerSize int
+		activation                   activation
+		cost                         cost
+		currLayerSize, prevLayerSize int
 	}
 	type args struct {
 		rowInput [][]float64
@@ -167,6 +173,7 @@ func Test_outputDense_forward(t *testing.T) {
 				activation:    new(mockActivation),
 				cost:          new(mockCost),
 				prevLayerSize: 5,
+				currLayerSize: 3,
 			},
 			args:       args{[][]float64{{1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}}},
 			wantOutput: []float64{15, 15, 15},
@@ -178,6 +185,7 @@ func Test_outputDense_forward(t *testing.T) {
 				activation:    tt.fields.activation,
 				cost:          tt.fields.cost,
 				prevLayerSize: tt.fields.prevLayerSize,
+				currLayerSize: tt.fields.currLayerSize,
 			}
 			gotOutput, err := l.forward(tt.args.rowInput)
 			if (err != nil) != tt.wantErr {
@@ -394,7 +402,7 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 	type fields struct {
 		currLayerSize int
 		nextLayerSize int
-		activated []float64
+		activated     []float64
 	}
 	type args struct {
 		eRRors []float64
@@ -423,7 +431,7 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 			l := &hiddenDense{
 				currLayerSize: tt.fields.currLayerSize,
 				nextLayerSize: tt.fields.nextLayerSize,
-				activated: tt.fields.activated,
+				activated:     tt.fields.activated,
 			}
 			if got := l.updateCorrections(tt.args.eRRors); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("hiddenDense.updateCorrections() = %v, want %v", got, tt.want)

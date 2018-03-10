@@ -4,9 +4,11 @@ and weight it by the feed-forward signal a_{l-1}feeding into that layer!
 */
 package go_deep
 
+import "fmt"
+
 type inputLayer interface {
 	synapseInitializer
-	forward([]float64) [][]float64
+	forward([]float64) ([][]float64, error)
 	backward([]float64)
 	applyCorrections(float64)
 }
@@ -36,9 +38,44 @@ type inputDense struct {
 	bias                         float64
 }
 
-func (l *inputDense) forward(input []float64) (output [][]float64) {
-	l.input = input
+func checkSynapsesSize(layerSize, synapsesSize int) error {
+	if layerSize == 0 || synapsesSize == 0 || synapsesSize != layerSize {
+		return fmt.Errorf(
+			"Synapses is not appropriate size to a current layer size.\nLayer size: %d\nSynapses size: %d",
+			synapsesSize,
+			layerSize,
+		)
+	}
+	return nil
+}
 
+func checkInputSize(inputSize, layerSize int) (err error ){
+	if inputSize != layerSize {
+		err = fmt.Errorf(
+			"Input is not appropriate size to a current layer size.\nLayer size: %d\nInput size: %d",
+			layerSize,
+			inputSize,
+		)
+	}
+	return
+}
+
+func areSizesConsistent(inputSize, layerSize, synapsesSize int, bias bool) (err error) {
+	if err = checkSynapsesSize(layerSize, synapsesSize); err == nil {
+		if bias {
+			layerSize--
+		}
+		err = checkInputSize(inputSize, layerSize)
+	}
+	return
+}
+
+func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
+	if err = areSizesConsistent(len(input), l.currLayerSize, len(l.synapses), false); err != nil {
+		return
+	}
+
+	l.input = input
 	// Exclude bias synapse
 	output = make([][]float64, l.nextLayerSize-1)
 	for i := 0; i < l.nextLayerSize-1; i++ {
@@ -103,6 +140,11 @@ type hiddenDense struct {
 }
 
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error) {
+	// Input lesser than a layer size because bias has no input.
+	if err = areSizesConsistent(len(input), l.currLayerSize, len(l.synapses), true); err != nil {
+		return
+	}
+
 	var inputSum, actValue float64
 	output = make([][]float64, l.nextLayerSize)
 
@@ -224,10 +266,14 @@ type outputDense struct {
 	// as a sum of weighted errors. Thus cost function is global for a network.
 	input []float64
 	cost
-	prevLayerSize int
+	prevLayerSize, currLayerSize int
 }
 
 func (l *outputDense) forward(rowInput [][]float64) (output []float64, err error) {
+	if err = checkInputSize(len(rowInput), l.currLayerSize); err != nil {
+		return
+	}
+
 	var iSum, actVal float64
 
 	l.input = nil
@@ -276,5 +322,6 @@ func newOutput(prev, curr int, activation activation, cost cost) outputLayer {
 		activation:    activation,
 		cost:          cost,
 		prevLayerSize: prev,
+		currLayerSize: curr,
 	}
 }

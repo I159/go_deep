@@ -9,7 +9,7 @@ import "fmt"
 type inputLayer interface {
 	synapseInitializer
 	forward([]float64) ([][]float64, error)
-	backward([]float64)
+	backward([]float64) error
 	applyCorrections(float64)
 }
 
@@ -49,7 +49,7 @@ func checkSynapsesSize(layerSize, synapsesSize int) error {
 	return nil
 }
 
-func checkInputSize(inputSize, layerSize int) (err error ){
+func checkInputSize(inputSize, layerSize int) (err error) {
 	if inputSize != layerSize {
 		err = fmt.Errorf(
 			"Input is not appropriate size to a current layer size.\nLayer size: %d\nInput size: %d",
@@ -86,7 +86,14 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 	return
 }
 
-func (l *inputDense) backward(eRRors []float64) {
+func (l *inputDense) backward(eRRors []float64) (err error) {
+	if err = checkInputSize(len(eRRors), l.nextLayerSize); err == nil {
+		err = checkInputSize(len(l.input), l.currLayerSize)
+	}
+	if err != nil {
+		return
+	}
+
 	if l.corrections == nil {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
@@ -99,9 +106,13 @@ func (l *inputDense) backward(eRRors []float64) {
 			l.corrections[j][i] += eRRors[i] * l.input[j]
 		}
 		if l.bias > 0 {
+			if l.corrections[l.currLayerSize-1] == nil {
+				l.corrections[l.currLayerSize-1] = make([]float64, l.nextLayerSize)
+			}
 			l.corrections[l.currLayerSize-1][i] += eRRors[i]
 		}
 	}
+	return
 }
 
 func (l *inputDense) applyCorrections(batchSize float64) {

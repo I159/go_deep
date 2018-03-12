@@ -10,7 +10,7 @@ type inputLayer interface {
 	synapseInitializer
 	forward([]float64) ([][]float64, error)
 	backward([]float64) error
-	applyCorrections(float64)
+	applyCorrections(float64) error
 }
 
 type hiddenLayer interface {
@@ -115,13 +115,20 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 	return
 }
 
-func (l *inputDense) applyCorrections(batchSize float64) {
+func (l *inputDense) applyCorrections(batchSize float64) error {
+	if len(l.corrections) != l.currLayerSize && l.currLayerSize != len(l.synapses) {
+		return fmt.Errorf(
+			"Synapses, corrections and a current layer size are not consistent.\nCorrections: %d\nSynapses:%d\nLayer: %d\n",
+			len(l.corrections), l.currLayerSize, len(l.synapses),
+		)
+	}
 	for i := 0; i < l.currLayerSize; i++ {
 		for j := 0; j < l.nextLayerSize; j++ {
 			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
 	l.corrections = nil
+	return nil
 }
 
 func newInputDense(curr, next int, learningRate, bias float64) inputLayer {

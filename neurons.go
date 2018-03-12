@@ -4,8 +4,6 @@ and weight it by the feed-forward signal a_{l-1}feeding into that layer!
 */
 package go_deep
 
-import "fmt"
-
 type inputLayer interface {
 	synapseInitializer
 	forward([]float64) ([][]float64, error)
@@ -18,7 +16,7 @@ type hiddenLayer interface {
 	synapseInitializer
 	forward([][]float64) ([][]float64, error)
 	backward([]float64) ([]float64, error)
-	applyCorrections(float64)
+	applyCorrections(float64) error
 }
 
 type outputLayer interface {
@@ -38,40 +36,10 @@ type inputDense struct {
 	bias                         float64
 }
 
-func checkSynapsesSize(layerSize, synapsesSize int) error {
-	if layerSize == 0 || synapsesSize == 0 || synapsesSize != layerSize {
-		return fmt.Errorf(
-			"Synapses is not appropriate size to a current layer size.\nLayer size: %d\nSynapses size: %d",
-			synapsesSize,
-			layerSize,
-		)
-	}
-	return nil
-}
-
-func checkInputSize(inputSize, layerSize int) (err error) {
-	if inputSize != layerSize {
-		err = fmt.Errorf(
-			"Input is not appropriate size to a current layer size.\nLayer size: %d\nInput size: %d",
-			layerSize,
-			inputSize,
-		)
-	}
-	return
-}
-
-func areSizesConsistent(inputSize, layerSize, synapsesSize int, bias bool) (err error) {
-	if err = checkSynapsesSize(layerSize, synapsesSize); err == nil {
-		if bias {
-			layerSize--
-		}
-		err = checkInputSize(inputSize, layerSize)
-	}
-	return
-}
-
 func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 	if err = areSizesConsistent(len(input), l.currLayerSize, len(l.synapses), false); err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
 		return
 	}
 
@@ -87,10 +55,13 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 }
 
 func (l *inputDense) backward(eRRors []float64) (err error) {
-	if err = checkInputSize(len(eRRors), l.nextLayerSize); err == nil {
+	if err = checkInputSize(len(eRRors), l.nextLayerSize-1); err == nil {
+		//                        				   Bias ^^
 		err = checkInputSize(len(l.input), l.currLayerSize)
 	}
 	if err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
 		return
 	}
 
@@ -98,7 +69,7 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
 
-	for i := 0; i < l.nextLayerSize; i++ {
+	for i := 0; i < l.nextLayerSize-1; i++ {
 		for j := 0; j < l.currLayerSize; j++ {
 			if l.corrections[j] == nil {
 				l.corrections[j] = make([]float64, l.nextLayerSize)
@@ -115,20 +86,22 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 	return
 }
 
-func (l *inputDense) applyCorrections(batchSize float64) error {
-	if len(l.corrections) != l.currLayerSize && l.currLayerSize != len(l.synapses) {
-		return fmt.Errorf(
-			"Synapses, corrections and a current layer size are not consistent.\nCorrections: %d\nSynapses:%d\nLayer: %d\n",
-			len(l.corrections), l.currLayerSize, len(l.synapses),
-		)
+func (l *inputDense) applyCorrections(batchSize float64) (err error) {
+	if err = areCorrsConsistent(len(l.corrections), l.currLayerSize, len(l.synapses)); err != nil {
+		return
 	}
+
 	for i := 0; i < l.currLayerSize; i++ {
+		if err = areCorrsConsistent(len(l.corrections[i]), l.nextLayerSize, len(l.synapses[i])); err != nil {
+			return
+		}
 		for j := 0; j < l.nextLayerSize; j++ {
 			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
 	l.corrections = nil
-	return nil
+
+	return
 }
 
 func newInputDense(curr, next int, learningRate, bias float64) inputLayer {
@@ -160,6 +133,8 @@ type hiddenDense struct {
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error) {
 	// Input lesser than a layer size because bias has no input.
 	if err = areSizesConsistent(len(input), l.currLayerSize, len(l.synapses), true); err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
 		return
 	}
 
@@ -248,13 +223,23 @@ func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err
 	return
 }
 
-func (l *hiddenDense) applyCorrections(batchSize float64) {
+// FIXME: refactor this crap. Should be implemented in a single place.
+func (l *hiddenDense) applyCorrections(batchSize float64) (err error) {
+	if err = areCorrsConsistent(len(l.corrections), l.currLayerSize, len(l.synapses)); err != nil {
+		return
+	}
+
 	for i := 0; i < l.currLayerSize; i++ {
+		if err = areCorrsConsistent(len(l.corrections[i]), l.nextLayerSize, len(l.synapses[i])); err != nil {
+			return
+		}
 		for j := 0; j < l.nextLayerSize; j++ {
 			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
 	l.corrections = nil
+
+	return
 }
 
 func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation activation, lastHidden bool) hiddenLayer {
@@ -289,6 +274,8 @@ type outputDense struct {
 
 func (l *outputDense) forward(rowInput [][]float64) (output []float64, err error) {
 	if err = checkInputSize(len(rowInput), l.currLayerSize); err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
 		return
 	}
 

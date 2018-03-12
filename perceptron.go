@@ -22,29 +22,31 @@ func (n *Perceptron) backward(prediction []float64, labels []float64) (err error
 			return err
 		}
 	}
-	n.input.backward(backpropErrs)
-	return nil
+	return n.input.backward(backpropErrs)
 }
 
-func (l *Perceptron) applyCorrections(batchSize float64) {
+func (l *Perceptron) applyCorrections(batchSize float64) (err error) {
 	for _, l := range l.hidden {
-		l.applyCorrections(batchSize)
+		if err = l.applyCorrections(batchSize); err != nil {
+			return
+		}
 	}
-	l.input.applyCorrections(batchSize)
+	return l.input.applyCorrections(batchSize)
 }
 
-func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) ([]float64, error) {
+func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64, err error) {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
 	var batchCounter int
 	var localCost float64
-	var costGradient []float64
 
 	for j := 0; j < epochs; j++ {
 		fmt.Printf("Epochs: %d\n", j+1)
 		for i, v := range set {
 			if batchCounter >= batchSize {
-				n.applyCorrections(float64(batchSize))
+				if err = n.applyCorrections(float64(batchSize)); err != nil {
+					return
+				}
 				costGradient = append(costGradient, localCost/float64(batchSize))
 				batchCounter = 0
 				localCost = 0

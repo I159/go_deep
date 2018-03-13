@@ -15,6 +15,8 @@ type synapseInitializer interface {
 type denseSynapses struct {
 	prev, curr, next int
 	synapses         [][]float64
+	bias             float64
+	nextBias         bool
 }
 
 func (s *denseSynapses) randomInit() {
@@ -27,44 +29,44 @@ func (s *denseSynapses) randomInit() {
 	}
 }
 
-func (s *denseSynapses) nguyenWiderow() {
-	var norm float64
-	beta := SCALING_BASE * math.Pow(float64(s.curr), 1.0/float64(s.prev))
-
-	for _, i := range s.synapses {
-		norm = 0
-		for _, j := range i {
-			norm += j * j
+func (s *denseSynapses) addBiases() {
+	if s.bias != 0 {
+		biasSignal := make([]float64, s.next)
+		for i := range biasSignal {
+			biasSignal[i] = s.bias
 		}
-		norm = math.Sqrt(norm)
-		for j, k := range i {
-			i[j] = (k * beta) / norm
-		}
+		s.synapses = append(s.synapses, biasSignal)
 	}
 }
 
 func (s *denseSynapses) init() [][]float64 {
 	s.randomInit()
+	s.addBiases()
 	return s.synapses
 }
 
 type hiddenDenseSynapses struct {
 	denseSynapses
-	bias float64
 }
 
-func (s *hiddenDenseSynapses) addBiases() {
-	biasSignal := make([]float64, s.next)
-	for i := range biasSignal {
-		biasSignal[i] = s.bias
+func (s *hiddenDenseSynapses) nguyenWiderow() {
+	var norm float64
+	beta := SCALING_BASE * math.Pow(float64(s.curr), 1.0/float64(s.prev))
+
+	for i := 0; i < s.curr; i++ {
+		norm = 0
+		for j := 0; j < s.next; j++ {
+			norm += math.Pow(s.synapses[i][j], 2.)
+		}
+		norm = math.Sqrt(norm)
+		for j := 0; j < s.curr; j++ {
+			s.synapses[i][j] = (s.synapses[i][j] * beta) / norm
+		}
 	}
-	s.synapses = append(s.synapses, biasSignal)
 }
 
 func (s hiddenDenseSynapses) init() [][]float64 {
-	s.curr-- //Free space for baias signal
 	s.denseSynapses.init()
-	s.nguyenWiderow()
 	s.addBiases()
 	return s.synapses
 }

@@ -134,7 +134,13 @@ type OutputShape struct {
 
 func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShape OutputShape) Network {
 	return &Perceptron{
-		input: newInputDense(inputShape.Size, hiddenShapes[0].Size, inputShape.LearningRate, inputShape.Bias),
+		input: newInputDense(
+			inputShape.Size,
+			hiddenShapes[0].Size,
+			inputShape.LearningRate,
+			inputShape.Bias,
+			hiddenShapes[0].Bias != 0,
+		),
 		hidden: []hiddenLayer{
 			newHiddenDense(
 				inputShape.Size,

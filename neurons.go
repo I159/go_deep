@@ -33,7 +33,8 @@ type inputDense struct {
 	nextLayerSize, currLayerSize int
 	learningRate                 float64
 	input                        []float64
-	bias                         float64
+	bias                         bool
+	nextBias                     bool
 }
 
 func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
@@ -44,10 +45,19 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 	}
 
 	l.input = input
+
 	// Exclude bias synapse
-	output = make([][]float64, l.nextLayerSize-1)
-	for i := 0; i < l.nextLayerSize-1; i++ {
-		for j := 0; j < l.currLayerSize; j++ {
+	nextLayerSize := l.nextLayerSize
+	if l.nextBias {
+		nextLayerSize--
+	}
+	currLayerSize := l.currLayerSize
+	if l.bias {
+		currLayerSize--
+	}
+	output = make([][]float64, nextLayerSize)
+	for i := 0; i < nextLayerSize; i++ {
+		for j := 0; j < currLayerSize; j++ {
 			output[i] = append(output[i], l.synapses[j][i]*input[j])
 		}
 	}
@@ -56,7 +66,6 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 
 func (l *inputDense) backward(eRRors []float64) (err error) {
 	if err = checkInputSize(len(eRRors), l.nextLayerSize-1); err == nil {
-		//                        				   Bias ^^
 		err = checkInputSize(len(l.input), l.currLayerSize)
 	}
 	if err != nil {
@@ -65,22 +74,32 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 		return
 	}
 
+	// Exclude bias synapse
+	nextLayerSize := l.nextLayerSize
+	if l.nextBias {
+		nextLayerSize--
+	}
+	currLayerSize := l.currLayerSize
+	if l.bias {
+		currLayerSize--
+	}
+
 	if l.corrections == nil {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
 
-	for i := 0; i < l.nextLayerSize-1; i++ {
-		for j := 0; j < l.currLayerSize; j++ {
+	for i := 0; i < nextLayerSize; i++ {
+		for j := 0; j < currLayerSize; j++ {
 			if l.corrections[j] == nil {
-				l.corrections[j] = make([]float64, l.nextLayerSize)
+				l.corrections[j] = make([]float64, nextLayerSize)
 			}
 			l.corrections[j][i] += eRRors[i] * l.input[j]
 		}
-		if l.bias > 0 {
-			if l.corrections[l.currLayerSize-1] == nil {
-				l.corrections[l.currLayerSize-1] = make([]float64, l.nextLayerSize)
+		if l.bias {
+			if l.corrections[currLayerSize] == nil {
+				l.corrections[currLayerSize] = make([]float64, nextLayerSize)
 			}
-			l.corrections[l.currLayerSize-1][i] += eRRors[i]
+			l.corrections[currLayerSize][i] += eRRors[i]
 		}
 	}
 	return
@@ -91,11 +110,16 @@ func (l *inputDense) applyCorrections(batchSize float64) (err error) {
 		return
 	}
 
+	nextLayerSize := l.nextLayerSize
+	if l.nextBias {
+		nextLayerSize--
+	}
+
 	for i := 0; i < l.currLayerSize; i++ {
-		if err = areCorrsConsistent(len(l.corrections[i]), l.nextLayerSize, len(l.synapses[i])); err != nil {
+		if err = areCorrsConsistent(len(l.corrections[i]), nextLayerSize, len(l.synapses[i])); err != nil {
 			return
 		}
-		for j := 0; j < l.nextLayerSize; j++ {
+		for j := 0; j < nextLayerSize; j++ {
 			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
@@ -104,17 +128,20 @@ func (l *inputDense) applyCorrections(batchSize float64) (err error) {
 	return
 }
 
-func newInputDense(curr, next int, learningRate, bias float64) inputLayer {
+func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) inputLayer {
 	layer := &inputDense{
 		synapseInitializer: &denseSynapses{
-			prev: 1,
-			curr: curr,
-			next: next,
+			prev:     1,
+			curr:     curr,
+			next:     next,
+			bias:     bias,
+			nextBias: nextBias,
 		},
 		currLayerSize: curr,
 		nextLayerSize: next,
 		learningRate:  learningRate,
-		bias:          bias,
+		bias:          bias != 0,
+		nextBias:      nextBias,
 	}
 	layer.synapses = layer.init()
 	return layer
@@ -127,7 +154,7 @@ type hiddenDense struct {
 	learningRate                                float64
 	corrections, synapses                       [][]float64
 	activated, input                            []float64
-	lastHidden                                  bool
+	nextBias, bias                              bool // Indicate do biases on a current layer and a next one exist
 }
 
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error) {
@@ -138,6 +165,15 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 		return
 	}
 
+	nextLayerSize := l.nextLayerSize
+	if l.nextBias {
+		nextLayerSize--
+	}
+	currLayerSize := l.currLayerSize
+	if l.bias {
+		currLayerSize--
+	}
+
 	var inputSum, actValue float64
 	output = make([][]float64, l.nextLayerSize)
 
@@ -146,7 +182,7 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 	// output values required cleanup before forward propagation but not after backward.
 	l.activated = nil
 	l.input = nil
-	for i := 0; i < l.currLayerSize-1; i++ {
+	for i := 0; i < currLayerSize; i++ {
 		//for _, i := range input {
 
 		// TODO: could be optimized. Don't collect input out of learning process.
@@ -164,37 +200,42 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 		l.activated = append(l.activated, actValue)
 	}
 
-	var nextLayerBias int
-	if !l.lastHidden {
-		nextLayerBias = 1
-	}
-	for i := 0; i < l.nextLayerSize-nextLayerBias; i++ {
-		for j := 0; j < l.currLayerSize-1; j++ {
+	for i := 0; i < nextLayerSize; i++ {
+		for j := 0; j < currLayerSize; j++ {
 			output[i] = append(output[i], l.synapses[j][i]*l.activated[j])
 		}
-		output[i] = append(output[i], l.synapses[l.currLayerSize-1][i])
+		output[i] = append(output[i], l.synapses[l.currLayerSize][i])
 	}
 	return
 }
 
 func (l *hiddenDense) updateCorrections(eRRors []float64) [][]float64 {
+	currLayerSize := l.currLayerSize
+	if l.bias {
+		currLayerSize--
+	}
+	nextLayerSize := l.nextLayerSize
+	if l.nextBias {
+		nextLayerSize--
+	}
+
 	// Collect corrections for further forward error propagation
 	if l.corrections == nil {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
 
-	for i := 0; i < l.nextLayerSize; i++ {
-		for j := 0; j < l.currLayerSize-1; j++ {
+	for i := 0; i < nextLayerSize; i++ {
+		for j := 0; j < currLayerSize; j++ {
 			if l.corrections[j] == nil {
 				l.corrections[j] = make([]float64, l.nextLayerSize)
 			}
-			l.corrections[j][i] +=  l.activated[j] * eRRors[i]
+			l.corrections[j][i] += l.activated[j] * eRRors[i]
 		}
 		// Apply bias error signal
-		if l.corrections[l.currLayerSize-1] == nil {
-			l.corrections[l.currLayerSize-1] = make([]float64, l.nextLayerSize)
+		if l.corrections[currLayerSize] == nil {
+			l.corrections[currLayerSize] = make([]float64, nextLayerSize)
 		}
-		l.corrections[l.currLayerSize-1][i] += eRRors[i]
+		l.corrections[currLayerSize][i] += eRRors[i]
 	}
 	return l.corrections
 }
@@ -204,10 +245,19 @@ func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err
 	// Single error signal per neuron.
 	l.corrections = l.updateCorrections(eRRors)
 
+	nextLayerSize := l.nextLayerSize
+	if l.nextBias {
+		nextLayerSize--
+	}
+	currLayerSize := l.currLayerSize
+	if l.bias {
+		currLayerSize--
+	}
+
 	// Bias is not connected with previous layer so exclude the last synapse
-	// Which is a bias for error signal computation.
+	// From both previous layer errors vector and a current one.
 	var eRRSum, actDer float64
-	for i := 0; i < l.currLayerSize-1; i++ {
+	for i := 0; i < currLayerSize; i++ {
 
 		actDer, err = l.actDerivative(l.input[i])
 		if err != nil {
@@ -215,7 +265,7 @@ func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err
 		}
 
 		eRRSum = 0
-		for j := 0; j < l.nextLayerSize; j++ {
+		for j := 0; j < nextLayerSize; j++ {
 			eRRSum += l.synapses[i][j] * eRRors[j]
 		}
 		prevLayerErrors = append(prevLayerErrors, actDer*eRRSum)
@@ -229,11 +279,16 @@ func (l *hiddenDense) applyCorrections(batchSize float64) (err error) {
 		return
 	}
 
+	nextLayerSize := l.nextLayerSize
+	if l.nextBias {
+		nextLayerSize--
+	}
+
 	for i := 0; i < l.currLayerSize; i++ {
-		if err = areCorrsConsistent(len(l.corrections[i]), l.nextLayerSize, len(l.synapses[i])); err != nil {
+		if err = areCorrsConsistent(len(l.corrections[i]), nextLayerSize, len(l.synapses[i])); err != nil {
 			return
 		}
-		for j := 0; j < l.nextLayerSize; j++ {
+		for j := 0; j < nextLayerSize; j++ {
 			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
@@ -242,22 +297,24 @@ func (l *hiddenDense) applyCorrections(batchSize float64) (err error) {
 	return
 }
 
-func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation activation, lastHidden bool) hiddenLayer {
+func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation activation, nextBias bool) hiddenLayer {
 	layer := &hiddenDense{
 		activation: activation,
 		synapseInitializer: &hiddenDenseSynapses{
 			denseSynapses{
-				prev: prev,
-				curr: curr,
-				next: next,
+				prev:     prev,
+				curr:     curr,
+				next:     next,
+				bias:     bias,
+				nextBias: nextBias,
 			},
-			bias,
 		},
 		prevLayerSize: prev,
 		currLayerSize: curr,
 		nextLayerSize: next,
 		learningRate:  learningRate,
-		lastHidden:    lastHidden,
+		nextBias:      nextBias,
+		bias:          bias != 0,
 	}
 	layer.synapses = layer.init()
 	return layer

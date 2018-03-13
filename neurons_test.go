@@ -79,7 +79,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 		nextLayerSize      int
 		learningRate       float64
 		synapses           [][]float64
-		lastHidden         bool
+		nextBias           bool
 	}
 	type args struct {
 		input [][]float64
@@ -105,7 +105,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 					{4, 40, 400},
 					{5, 5, 5},
 				},
-				lastHidden: true,
+				nextBias: false,
 			},
 			args: args{
 				[][]float64{
@@ -127,7 +127,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 				currLayerSize: tt.fields.currLayerSize,
 				nextLayerSize: tt.fields.nextLayerSize,
 				synapses:      tt.fields.synapses,
-				lastHidden:    tt.fields.lastHidden,
+				nextBias:      tt.fields.nextBias,
 			}
 			gotOutput, err := l.forward(tt.args.input)
 			if (err != nil) != tt.wantErr {
@@ -245,38 +245,49 @@ func Test_outputDense_forwardMeasure(t *testing.T) {
 
 func Test_inputDense_backward(t *testing.T) {
 	type fields struct {
-		synapseInitializer synapseInitializer
-		corrections        [][]float64
-		synapses           [][]float64
-		nextLayerSize      int
-		currLayerSize      int
-		learningRate       float64
-		input              []float64
-		bias               float64
+		nextLayerSize int
+		currLayerSize int
+		input         []float64
+		bias          bool
 	}
 	type args struct {
 		eRRors []float64
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		want    [][]float64
 	}{
-	// TODO: Add test cases.
+		{
+			name: "inputBackward",
+			fields: fields{
+				nextLayerSize: 5,
+				currLayerSize: 3,
+				input:         []float64{1, 2, 3, 4, 5},
+			},
+			args: args{[]float64{1, 2, 3}},
+			want: [][]float64{
+				{1, 2, 3, 4, 5}, {2, 4, 6, 8, 5}, {3, 6, 9, 12, 5},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &inputDense{
-				synapseInitializer: tt.fields.synapseInitializer,
-				corrections:        tt.fields.corrections,
-				synapses:           tt.fields.synapses,
-				nextLayerSize:      tt.fields.nextLayerSize,
-				currLayerSize:      tt.fields.currLayerSize,
-				learningRate:       tt.fields.learningRate,
-				input:              tt.fields.input,
-				bias:               tt.fields.bias,
+				nextLayerSize: tt.fields.nextLayerSize,
+				currLayerSize: tt.fields.currLayerSize,
+				input:         tt.fields.input,
+				bias:          tt.fields.bias,
 			}
-			l.backward(tt.args.eRRors)
+
+			if err := l.backward(tt.args.eRRors); (err != nil) != tt.wantErr {
+				t.Errorf("hiddenDense.applyCorrections() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(l.synapses, tt.want) {
+				t.Errorf("hiddenDense.corrections = %v, want %v", l.corrections, tt.want)
+			}
 		})
 	}
 }
@@ -290,7 +301,7 @@ func Test_hiddenDense_backward(t *testing.T) {
 		synapses      [][]float64
 		activated     []float64
 		input         []float64
-		lastHidden    bool
+		nextBias      bool
 	}
 	type args struct {
 		eRRors []float64
@@ -331,7 +342,7 @@ func Test_hiddenDense_backward(t *testing.T) {
 				synapses:      tt.fields.synapses,
 				activated:     tt.fields.activated,
 				input:         tt.fields.input,
-				lastHidden:    tt.fields.lastHidden,
+				nextBias:      tt.fields.nextBias,
 			}
 			gotPrevLayerErrors, err := l.backward(tt.args.eRRors)
 			if (err != nil) != tt.wantErr {
@@ -449,7 +460,7 @@ func Test_inputDense_applyCorrections(t *testing.T) {
 		currLayerSize      int
 		learningRate       float64
 		input              []float64
-		bias               float64
+		bias               bool
 	}
 	type args struct {
 		batchSize float64
@@ -488,7 +499,7 @@ func Test_hiddenDense_applyCorrections(t *testing.T) {
 		learningRate  float64
 		corrections   [][]float64
 		synapses      [][]float64
-		lastHidden    bool
+		nextBias      bool
 	}
 	type args struct {
 		batchSize float64
@@ -527,7 +538,7 @@ func Test_hiddenDense_applyCorrections(t *testing.T) {
 				learningRate:  tt.fields.learningRate,
 				corrections:   tt.fields.corrections,
 				synapses:      tt.fields.synapses,
-				lastHidden:    tt.fields.lastHidden,
+				nextBias:      tt.fields.nextBias,
 			}
 			if err := l.applyCorrections(tt.args.batchSize); (err != nil) != tt.wantErr {
 				t.Errorf("hiddenDense.applyCorrections() error = %v, wantErr %v", err, tt.wantErr)

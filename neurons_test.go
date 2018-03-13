@@ -439,3 +439,102 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 		})
 	}
 }
+
+func Test_inputDense_applyCorrections(t *testing.T) {
+	type fields struct {
+		synapseInitializer synapseInitializer
+		corrections        [][]float64
+		synapses           [][]float64
+		nextLayerSize      int
+		currLayerSize      int
+		learningRate       float64
+		input              []float64
+		bias               float64
+	}
+	type args struct {
+		batchSize float64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &inputDense{
+				synapseInitializer: tt.fields.synapseInitializer,
+				corrections:        tt.fields.corrections,
+				synapses:           tt.fields.synapses,
+				nextLayerSize:      tt.fields.nextLayerSize,
+				currLayerSize:      tt.fields.currLayerSize,
+				learningRate:       tt.fields.learningRate,
+				input:              tt.fields.input,
+				bias:               tt.fields.bias,
+			}
+			if err := l.applyCorrections(tt.args.batchSize); (err != nil) != tt.wantErr {
+				t.Errorf("inputDense.applyCorrections() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_hiddenDense_applyCorrections(t *testing.T) {
+	type fields struct {
+		currLayerSize int
+		nextLayerSize int
+		learningRate  float64
+		corrections   [][]float64
+		synapses      [][]float64
+		lastHidden    bool
+	}
+	type args struct {
+		batchSize float64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		want    [][]float64
+	}{
+		{
+			name: "applyCorrections",
+			fields: fields{
+				currLayerSize: 5,
+				nextLayerSize: 3,
+				learningRate:  1,
+				corrections: [][]float64{
+					{2, 8, 18}, {3, 12, 27}, {4, 16, 36}, {5, 20, 45}, {1, 4, 9},
+				},
+				synapses: [][]float64{
+					{-2, -8, -18}, {-3, -12, -27}, {-4, -16, -36}, {-5, -20, -45}, {-1, -4, -9},
+				},
+			},
+			args: args{1},
+			want: [][]float64{
+				{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &hiddenDense{
+				currLayerSize: tt.fields.currLayerSize,
+				nextLayerSize: tt.fields.nextLayerSize,
+				learningRate:  tt.fields.learningRate,
+				corrections:   tt.fields.corrections,
+				synapses:      tt.fields.synapses,
+				lastHidden:    tt.fields.lastHidden,
+			}
+			if err := l.applyCorrections(tt.args.batchSize); (err != nil) != tt.wantErr {
+				t.Errorf("hiddenDense.applyCorrections() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(l.synapses, tt.want) {
+				t.Errorf("hiddenDense.synapses = %v, want %v", l.synapses, tt.want)
+			}
+		})
+	}
+}

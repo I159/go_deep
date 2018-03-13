@@ -188,7 +188,7 @@ func (l *hiddenDense) updateCorrections(eRRors []float64) [][]float64 {
 			if l.corrections[j] == nil {
 				l.corrections[j] = make([]float64, l.nextLayerSize)
 			}
-			l.corrections[j][i] += eRRors[i] * l.activated[j]
+			l.corrections[j][i] +=  l.activated[j] * eRRors[i]
 		}
 		// Apply bias error signal
 		if l.corrections[l.currLayerSize-1] == nil {

@@ -20,18 +20,32 @@ type denseSynapses struct {
 }
 
 func (s *denseSynapses) randomInit() {
+	curr := s.curr
+	if s.bias != 0 {
+		curr--
+	}
+	next := s.next
+	if s.nextBias {
+		next--
+	}
+
 	rand.Seed(time.Now().UTC().UnixNano())
-	for i := 0; i < s.curr; i++ {
+	for i := 0; i < curr; i++ {
 		s.synapses = append(s.synapses, []float64{})
-		for j := 0; j < s.next; j++ {
+		for j := 0; j < next; j++ {
 			s.synapses[i] = append(s.synapses[i], rand.Float64()-0.5)
 		}
 	}
 }
 
 func (s *denseSynapses) addBiases() {
+	next := s.next
+	if s.nextBias {
+		next--
+	}
+
 	if s.bias != 0 {
-		biasSignal := make([]float64, s.next)
+		biasSignal := make([]float64, next)
 		for i := range biasSignal {
 			biasSignal[i] = s.bias
 		}
@@ -50,16 +64,25 @@ type hiddenDenseSynapses struct {
 }
 
 func (s *hiddenDenseSynapses) nguyenWiderow() {
+	curr := s.curr
+	if s.bias != 0 {
+		curr--
+	}
+	next := s.next
+	if s.nextBias {
+		next--
+	}
+
 	var norm float64
 	beta := SCALING_BASE * math.Pow(float64(s.curr), 1.0/float64(s.prev))
 
-	for i := 0; i < s.curr; i++ {
+	for i := 0; i < curr; i++ {
 		norm = 0
-		for j := 0; j < s.next; j++ {
+		for j := 0; j < next; j++ {
 			norm += math.Pow(s.synapses[i][j], 2.)
 		}
 		norm = math.Sqrt(norm)
-		for j := 0; j < s.curr; j++ {
+		for j := 0; j < next; j++ {
 			s.synapses[i][j] = (s.synapses[i][j] * beta) / norm
 		}
 	}

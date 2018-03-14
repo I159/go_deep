@@ -276,7 +276,7 @@ func Test_inputDense_backward(t *testing.T) {
 			},
 			args: args{[]float64{1, 2, 3, 4}},
 			want: [][]float64{
-				{1, 2, 3, 4, 5}, {2, 4, 6, 8, 5}, {3, 6, 9, 12, 5},
+				{1, 2, 3, 4}, {2, 4, 6, 8}, {3, 6, 9, 12}, {1, 2, 3, 4},
 			},
 		},
 	}
@@ -293,7 +293,7 @@ func Test_inputDense_backward(t *testing.T) {
 			if err := l.backward(tt.args.eRRors); (err != nil) != tt.wantErr {
 				t.Errorf("hiddenDense.applyCorrections() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(l.synapses, tt.want) {
+			if !reflect.DeepEqual(l.corrections, tt.want) {
 				t.Errorf("hiddenDense.corrections = %v, want %v", l.corrections, tt.want)
 			}
 		})

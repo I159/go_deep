@@ -22,28 +22,31 @@ func (n *Perceptron) backward(prediction []float64, labels []float64) (err error
 			return err
 		}
 	}
-	return nil
+	return n.input.backward(backpropErrs)
 }
 
-func (l *Perceptron) applyCorrections(batchSize float64) {
+func (l *Perceptron) applyCorrections(batchSize float64) (err error) {
 	for _, l := range l.hidden {
-		l.applyCorrections(batchSize)
+		if err = l.applyCorrections(batchSize); err != nil {
+			return
+		}
 	}
-	l.input.applyCorrections(batchSize)
+	return l.input.applyCorrections(batchSize)
 }
 
-func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) ([]float64, error) {
+func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64, err error) {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
 	var batchCounter int
 	var localCost float64
-	var costGradient []float64
 
 	for j := 0; j < epochs; j++ {
 		fmt.Printf("Epochs: %d\n", j+1)
 		for i, v := range set {
 			if batchCounter >= batchSize {
-				n.applyCorrections(float64(batchSize))
+				if err = n.applyCorrections(float64(batchSize)); err != nil {
+					return
+				}
 				costGradient = append(costGradient, localCost/float64(batchSize))
 				batchCounter = 0
 				localCost = 0
@@ -69,7 +72,11 @@ func (n *Perceptron) forward(rowInput []float64) ([]float64, error) {
 	var fwdProp [][]float64
 	var err error
 
-	fwdProp = n.input.forward(rowInput)
+	fwdProp, err = n.input.forward(rowInput)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, l := range n.hidden {
 		fwdProp, err = l.forward(fwdProp)
 		if err != nil {
@@ -81,7 +88,12 @@ func (n *Perceptron) forward(rowInput []float64) ([]float64, error) {
 
 func (n *Perceptron) forwardMeasure(rowInput, labels []float64) (prediction []float64, cost float64, err error) {
 	var fwdProp [][]float64
-	fwdProp = n.input.forward(rowInput)
+
+	fwdProp, err = n.input.forward(rowInput)
+	if err != nil {
+		return nil, 0, err
+	}
+
 	for _, l := range n.hidden {
 		fwdProp, err = l.forward(fwdProp)
 		if err != nil {
@@ -105,8 +117,8 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64, err err
 }
 
 type InputShape struct {
-	Size         int
-	LearningRate float64
+	Size               int
+	LearningRate, Bias float64
 }
 type HiddenShape struct {
 	Size               int
@@ -122,7 +134,13 @@ type OutputShape struct {
 
 func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShape OutputShape) Network {
 	return &Perceptron{
-		input: newInputDense(inputShape.Size, hiddenShapes[0].Size, inputShape.LearningRate),
+		input: newInputDense(
+			inputShape.Size,
+			hiddenShapes[0].Size,
+			inputShape.LearningRate,
+			inputShape.Bias,
+			hiddenShapes[0].Bias != 0,
+		),
 		hidden: []hiddenLayer{
 			newHiddenDense(
 				inputShape.Size,
@@ -131,6 +149,7 @@ func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShap
 				hiddenShapes[0].Bias,
 				hiddenShapes[0].LearningRate,
 				hiddenShapes[0].Activation,
+				false,
 			),
 		},
 		output: newOutput(hiddenShapes[0].Size, outputShape.Size, outputShape.Activation, outputShape.Cost),

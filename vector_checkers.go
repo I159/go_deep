@@ -4,10 +4,12 @@ import "fmt"
 
 func areCorrsConsistent(corrSize, layerSize, synapsesSize int) error {
 	if corrSize != layerSize || layerSize != corrSize {
-		return fmt.Errorf(
-			"Synapses, corrections and a current layer size are not consistent.\nCorrections: %d\nSynapses:%d\nLayer: %d\n",
-			corrSize, layerSize, synapsesSize,
-		)
+		return locatedError{
+			fmt.Sprintf(
+				"Synapses, corrections and a current layer size are not consistent.\nCorrections: %d\nSynapses:%d\nLayer: %d\n",
+				corrSize, layerSize, synapsesSize,
+			),
+		}
 	}
 	return nil
 }

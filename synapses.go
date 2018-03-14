@@ -55,7 +55,9 @@ func (s *denseSynapses) addBiases() {
 
 func (s *denseSynapses) init() [][]float64 {
 	s.randomInit()
-	s.addBiases()
+	if s.bias != 0 {
+		s.addBiases()
+	}
 	return s.synapses
 }
 
@@ -90,6 +92,6 @@ func (s *hiddenDenseSynapses) nguyenWiderow() {
 
 func (s hiddenDenseSynapses) init() [][]float64 {
 	s.denseSynapses.init()
-	s.addBiases()
+	s.nguyenWiderow()
 	return s.synapses
 }

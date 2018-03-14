@@ -75,13 +75,12 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 		currLayerSize--
 	}
 
-	if err = checkInputSize(len(eRRors), nextLayerSize); err == nil {
-		err = checkInputSize(len(l.input), currLayerSize)
-	}
-	if err != nil {
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
-		return
+	if err = checkInputSize(len(eRRors), nextLayerSize); err != nil {
+		if err = checkInputSize(len(l.input), currLayerSize); err != nil {
+			lockErr := err.(locatedError)
+			err = lockErr.freeze()
+			return
+		}
 	}
 
 	if l.corrections == nil {
@@ -107,6 +106,8 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 
 func (l *inputDense) applyCorrections(batchSize float64) (err error) {
 	if err = areCorrsConsistent(len(l.corrections), l.currLayerSize, len(l.synapses)); err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
 		return
 	}
 
@@ -278,6 +279,8 @@ func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err
 // FIXME: refactor this crap. Should be implemented in a single place.
 func (l *hiddenDense) applyCorrections(batchSize float64) (err error) {
 	if err = areCorrsConsistent(len(l.corrections), l.currLayerSize, len(l.synapses)); err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
 		return
 	}
 
@@ -288,6 +291,8 @@ func (l *hiddenDense) applyCorrections(batchSize float64) (err error) {
 
 	for i := 0; i < l.currLayerSize; i++ {
 		if err = areCorrsConsistent(len(l.corrections[i]), nextLayerSize, len(l.synapses[i])); err != nil {
+			lockErr := err.(locatedError)
+			err = lockErr.freeze()
 			return
 		}
 		for j := 0; j < nextLayerSize; j++ {

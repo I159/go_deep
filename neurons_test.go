@@ -10,6 +10,7 @@ func Test_inputDense_forward(t *testing.T) {
 		synapses      [][]float64
 		nextLayerSize int
 		currLayerSize int
+		nextBias      bool
 	}
 	type args struct {
 		input []float64
@@ -31,6 +32,7 @@ func Test_inputDense_forward(t *testing.T) {
 				},
 				nextLayerSize: 5,
 				currLayerSize: 3,
+				nextBias:      true,
 			},
 			args: args{[]float64{1, 2, 3}},
 			wantOutput: [][]float64{
@@ -47,6 +49,7 @@ func Test_inputDense_forward(t *testing.T) {
 				synapses:      tt.fields.synapses,
 				nextLayerSize: tt.fields.nextLayerSize,
 				currLayerSize: tt.fields.currLayerSize,
+				nextBias:      tt.fields.nextBias,
 			}
 			gotOutput, err := l.forward(tt.args.input)
 			if (err != nil) != tt.wantErr {
@@ -79,7 +82,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 		nextLayerSize      int
 		learningRate       float64
 		synapses           [][]float64
-		nextBias           bool
+		nextBias, bias     bool
 	}
 	type args struct {
 		input [][]float64
@@ -106,6 +109,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 					{5, 5, 5},
 				},
 				nextBias: false,
+				bias:     true,
 			},
 			args: args{
 				[][]float64{
@@ -128,6 +132,7 @@ func Test_hiddenDense_forward(t *testing.T) {
 				nextLayerSize: tt.fields.nextLayerSize,
 				synapses:      tt.fields.synapses,
 				nextBias:      tt.fields.nextBias,
+				bias:          tt.fields.bias,
 			}
 			gotOutput, err := l.forward(tt.args.input)
 			if (err != nil) != tt.wantErr {
@@ -245,10 +250,10 @@ func Test_outputDense_forwardMeasure(t *testing.T) {
 
 func Test_inputDense_backward(t *testing.T) {
 	type fields struct {
-		nextLayerSize int
-		currLayerSize int
-		input         []float64
-		bias          bool
+		nextLayerSize  int
+		currLayerSize  int
+		input          []float64
+		bias, nextBias bool
 	}
 	type args struct {
 		eRRors []float64
@@ -264,10 +269,12 @@ func Test_inputDense_backward(t *testing.T) {
 			name: "inputBackward",
 			fields: fields{
 				nextLayerSize: 5,
-				currLayerSize: 3,
-				input:         []float64{1, 2, 3, 4, 5},
+				currLayerSize: 4,
+				input:         []float64{1, 2, 3},
+				nextBias:      true,
+				bias:          true,
 			},
-			args: args{[]float64{1, 2, 3}},
+			args: args{[]float64{1, 2, 3, 4}},
 			want: [][]float64{
 				{1, 2, 3, 4, 5}, {2, 4, 6, 8, 5}, {3, 6, 9, 12, 5},
 			},
@@ -280,6 +287,7 @@ func Test_inputDense_backward(t *testing.T) {
 				currLayerSize: tt.fields.currLayerSize,
 				input:         tt.fields.input,
 				bias:          tt.fields.bias,
+				nextBias:      tt.fields.nextBias,
 			}
 
 			if err := l.backward(tt.args.eRRors); (err != nil) != tt.wantErr {
@@ -294,14 +302,14 @@ func Test_inputDense_backward(t *testing.T) {
 
 func Test_hiddenDense_backward(t *testing.T) {
 	type fields struct {
-		activation    activation
-		prevLayerSize int
-		currLayerSize int
-		nextLayerSize int
-		synapses      [][]float64
-		activated     []float64
-		input         []float64
-		nextBias      bool
+		activation     activation
+		prevLayerSize  int
+		currLayerSize  int
+		nextLayerSize  int
+		synapses       [][]float64
+		activated      []float64
+		input          []float64
+		nextBias, bias bool
 	}
 	type args struct {
 		eRRors []float64
@@ -327,7 +335,9 @@ func Test_hiddenDense_backward(t *testing.T) {
 					{10, 20, 30},
 					{100, 200, 300},
 					{1000, 2000, 3000},
-					{5, 5, 5}},
+					{5, 5, 5},
+				},
+				bias: true,
 			},
 			args:                args{[]float64{1, 2, 3}},
 			wantPrevLayerErrors: []float64{14, 280, 4200, 56000},
@@ -343,6 +353,7 @@ func Test_hiddenDense_backward(t *testing.T) {
 				activated:     tt.fields.activated,
 				input:         tt.fields.input,
 				nextBias:      tt.fields.nextBias,
+				bias:          tt.fields.bias,
 			}
 			gotPrevLayerErrors, err := l.backward(tt.args.eRRors)
 			if (err != nil) != tt.wantErr {
@@ -414,6 +425,7 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 		currLayerSize int
 		nextLayerSize int
 		activated     []float64
+		bias          bool
 	}
 	type args struct {
 		eRRors []float64
@@ -430,6 +442,7 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 				currLayerSize: 5,
 				nextLayerSize: 3,
 				activated:     []float64{2, 3, 4, 5},
+				bias:          true,
 			},
 			args: args{[]float64{1, 4, 9}},
 			want: [][]float64{
@@ -443,6 +456,7 @@ func Test_hiddenDense_updateCorrections(t *testing.T) {
 				currLayerSize: tt.fields.currLayerSize,
 				nextLayerSize: tt.fields.nextLayerSize,
 				activated:     tt.fields.activated,
+				bias:          tt.fields.bias,
 			}
 			if got := l.updateCorrections(tt.args.eRRors); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("hiddenDense.updateCorrections() = %v, want %v", got, tt.want)
@@ -494,12 +508,12 @@ func Test_inputDense_applyCorrections(t *testing.T) {
 
 func Test_hiddenDense_applyCorrections(t *testing.T) {
 	type fields struct {
-		currLayerSize int
-		nextLayerSize int
-		learningRate  float64
-		corrections   [][]float64
-		synapses      [][]float64
-		nextBias      bool
+		currLayerSize  int
+		nextLayerSize  int
+		learningRate   float64
+		corrections    [][]float64
+		synapses       [][]float64
+		nextBias, bias bool
 	}
 	type args struct {
 		batchSize float64
@@ -523,6 +537,7 @@ func Test_hiddenDense_applyCorrections(t *testing.T) {
 				synapses: [][]float64{
 					{-2, -8, -18}, {-3, -12, -27}, {-4, -16, -36}, {-5, -20, -45}, {-1, -4, -9},
 				},
+				bias: true,
 			},
 			args: args{1},
 			want: [][]float64{
@@ -539,6 +554,7 @@ func Test_hiddenDense_applyCorrections(t *testing.T) {
 				corrections:   tt.fields.corrections,
 				synapses:      tt.fields.synapses,
 				nextBias:      tt.fields.nextBias,
+				bias:          tt.fields.bias,
 			}
 			if err := l.applyCorrections(tt.args.batchSize); (err != nil) != tt.wantErr {
 				t.Errorf("hiddenDense.applyCorrections() error = %v, wantErr %v", err, tt.wantErr)

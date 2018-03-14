@@ -65,15 +65,6 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 }
 
 func (l *inputDense) backward(eRRors []float64) (err error) {
-	if err = checkInputSize(len(eRRors), l.nextLayerSize-1); err == nil {
-		err = checkInputSize(len(l.input), l.currLayerSize)
-	}
-	if err != nil {
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
-		return
-	}
-
 	// Exclude bias synapse
 	nextLayerSize := l.nextLayerSize
 	if l.nextBias {
@@ -82,6 +73,15 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 	currLayerSize := l.currLayerSize
 	if l.bias {
 		currLayerSize--
+	}
+
+	if err = checkInputSize(len(eRRors), nextLayerSize); err == nil {
+		err = checkInputSize(len(l.input), currLayerSize)
+	}
+	if err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
+		return
 	}
 
 	if l.corrections == nil {
@@ -204,7 +204,9 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 		for j := 0; j < currLayerSize; j++ {
 			output[i] = append(output[i], l.synapses[j][i]*l.activated[j])
 		}
-		output[i] = append(output[i], l.synapses[l.currLayerSize][i])
+		if l.bias {
+			output[i] = append(output[i], l.synapses[currLayerSize][i])
+		}
 	}
 	return
 }

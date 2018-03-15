@@ -4,6 +4,8 @@ and weight it by the feed-forward signal a_{l-1}feeding into that layer!
 */
 package go_deep
 
+import "fmt"
+
 type inputLayer interface {
 	synapseInitializer
 	forward([]float64) ([][]float64, error)
@@ -38,10 +40,28 @@ type inputDense struct {
 }
 
 func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
-	l.input = input
-	output = dot1dTo2d(input, l.synapses)
+	var currLayerSize = l.currLayerSize
 	if l.bias {
-		output = appendAlongside(l.synapses[len(l.synapses)-1], output)
+		currLayerSize--
+	}
+	if len(input) != currLayerSize {
+		err = locatedError{
+			fmt.Sprintf(
+				"Input is not relevant. Input: %d Layer: %d Bias: %t",
+				len(input),
+				l.currLayerSize,
+				l.bias,
+			),
+		}
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
+		return
+	}
+
+	l.input = input
+	output = transMul1dTo2d(input, l.synapses)
+	if l.bias {
+		output = augment(output, l.synapses[len(l.synapses)-1])
 	}
 	return
 }
@@ -166,8 +186,6 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 	l.activated = nil
 	l.input = nil
 	for i := 0; i < currLayerSize; i++ {
-		//for _, i := range input {
-
 		// TODO: could be optimized. Don't collect input out of learning process.
 		inputSum = 0
 		for _, j := range input[i] {

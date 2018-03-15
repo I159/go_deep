@@ -38,14 +38,14 @@ func Test_dot1dTo2d(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotD2out := dot1dTo2d(tt.args.d1, tt.args.d2); !reflect.DeepEqual(gotD2out, tt.wantD2out) {
+			if gotD2out := transMul1dTo2d(tt.args.d1, tt.args.d2); !reflect.DeepEqual(gotD2out, tt.wantD2out) {
 				t.Errorf("dot1dTo2d() = %v, want %v", gotD2out, tt.wantD2out)
 			}
 		})
 	}
 }
 
-func Test_appendAlongside(t *testing.T) {
+func Test_augment(t *testing.T) {
 	type args struct {
 		d1 []float64
 		d2 [][]float64
@@ -68,17 +68,17 @@ func Test_appendAlongside(t *testing.T) {
 				},
 			},
 			want: [][]float64{
-					{1, 20, 300, 1},
-					{2, 40, 600, 1},
-					{3, 60, 900, 1},
-					{4, 80, 1200, 1},
-					{5, 100, 1500, 1},
-				},
+				{1, 20, 300, 1},
+				{2, 40, 600, 1},
+				{3, 60, 900, 1},
+				{4, 80, 1200, 1},
+				{5, 100, 1500, 1},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := appendAlongside(tt.args.d1, tt.args.d2); !reflect.DeepEqual(got, tt.want) {
+			if got := augment(tt.args.d2, tt.args.d1); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("appendAlongside() = %v, want %v", got, tt.want)
 			}
 		})

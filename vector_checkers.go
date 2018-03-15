@@ -2,6 +2,7 @@ package go_deep
 
 import "fmt"
 
+
 func areCorrsConsistent(corrSize, layerSize, synapsesSize int) error {
 	if corrSize != layerSize || layerSize != corrSize {
 		return locatedError{

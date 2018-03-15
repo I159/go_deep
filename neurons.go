@@ -38,28 +38,10 @@ type inputDense struct {
 }
 
 func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
-	if err = areSizesConsistent(len(input), l.currLayerSize, len(l.synapses), false); err != nil {
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
-		return
-	}
-
 	l.input = input
-
-	// Exclude bias synapse
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
-	}
-	currLayerSize := l.currLayerSize
+	output = dot1dTo2d(input, l.synapses)
 	if l.bias {
-		currLayerSize--
-	}
-	output = make([][]float64, nextLayerSize)
-	for i := 0; i < nextLayerSize; i++ {
-		for j := 0; j < currLayerSize; j++ {
-			output[i] = append(output[i], l.synapses[j][i]*input[j])
-		}
+		output = appendAlongside(l.synapses[len(l.synapses)-1], output)
 	}
 	return
 }

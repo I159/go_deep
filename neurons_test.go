@@ -46,10 +46,12 @@ func Test_inputDense_forward(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			l := &inputDense{
-				synapses:      tt.fields.synapses,
-				nextLayerSize: tt.fields.nextLayerSize,
-				currLayerSize: tt.fields.currLayerSize,
-				nextBias:      tt.fields.nextBias,
+				synapses: tt.fields.synapses,
+				sizesChecker: &sizesChecker{
+					nextLayerSize: tt.fields.nextLayerSize,
+					currLayerSize: tt.fields.currLayerSize,
+					nextBias:      tt.fields.nextBias,
+				},
 			}
 			gotOutput, err := l.forward(tt.args.input)
 			if (err != nil) != tt.wantErr {

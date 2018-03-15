@@ -6,6 +6,11 @@ package go_deep
 
 import "fmt"
 
+type cons1DChecker interface {
+	checkInput(input []float64) error
+	isBias() bool
+}
+
 type inputLayer interface {
 	synapseInitializer
 	forward([]float64) ([][]float64, error)
@@ -29,17 +34,16 @@ type outputLayer interface {
 	backward(prediction, labels []float64) ([]float64, error)
 }
 
-type inputDense struct {
-	synapseInitializer
-	corrections, synapses        [][]float64
-	nextLayerSize, currLayerSize int
-	learningRate                 float64
-	input                        []float64
-	bias                         bool
-	nextBias                     bool
+type sizesChecker struct {
+	bias, nextBias                              bool
+	nextLayerSize, currLayerSize, prevLayerSize int
 }
 
-func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
+func (c *sizesChecker) isBias() bool {
+	return c.bias
+}
+
+func (l *sizesChecker) checkInput(input []float64) (err error) {
 	var currLayerSize = l.currLayerSize
 	if l.bias {
 		currLayerSize--
@@ -55,12 +59,27 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 		}
 		lockErr := err.(locatedError)
 		err = lockErr.freeze()
+	}
+	return
+}
+
+type inputDense struct {
+	synapseInitializer
+	cons1DChecker
+	corrections, synapses [][]float64
+	learningRate          float64
+	input                 []float64
+}
+
+func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
+	if err = l.checkInput(input); err != nil {
 		return
 	}
 
 	l.input = input
+
 	output = transMul1dTo2d(input, l.synapses)
-	if l.bias {
+	if l.isBias() {
 		output = augment(output, l.synapses[len(l.synapses)-1])
 	}
 	return
@@ -89,6 +108,8 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 		l.corrections = make([][]float64, l.currLayerSize)
 	}
 
+	// TODO: implement with separated dot product and update
+	// TODO: optimize later
 	for i := 0; i < nextLayerSize; i++ {
 		for j := 0; j < currLayerSize; j++ {
 			if l.corrections[j] == nil {
@@ -140,11 +161,13 @@ func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) in
 			bias:     bias,
 			nextBias: nextBias,
 		},
-		currLayerSize: curr,
-		nextLayerSize: next,
-		learningRate:  learningRate,
-		bias:          bias != 0,
-		nextBias:      nextBias,
+		sizesChecker: &sizesChecker{
+			currLayerSize: curr,
+			nextLayerSize: next,
+			bias:          bias != 0,
+			nextBias:      nextBias,
+		},
+		learningRate: learningRate,
 	}
 	layer.synapses = layer.init()
 	return layer
@@ -177,29 +200,14 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 		currLayerSize--
 	}
 
-	var inputSum, actValue float64
 	output = make([][]float64, l.nextLayerSize)
 
-	// Activated output used at backward propagation, but obviously filled
-	// not only after backprop. For correct accumulation of activated
-	// output values required cleanup before forward propagation but not after backward.
-	l.activated = nil
-	l.input = nil
-	for i := 0; i < currLayerSize; i++ {
-		// TODO: could be optimized. Don't collect input out of learning process.
-		inputSum = 0
-		for _, j := range input[i] {
-			inputSum += j
-		}
-
-		l.input = append(l.input, inputSum)
-		actValue, err = l.activate(inputSum)
-		if err != nil {
-			return
-		}
-
-		l.activated = append(l.activated, actValue)
+	operationTransform := opsTrans2dTo1d{l.activate}
+	l.activated, err = operationTransform.trans2dTo1d(input)
+	if err != nil {
+		return
 	}
+	l.input = transSum2dTo1d(input)
 
 	for i := 0; i < nextLayerSize; i++ {
 		for j := 0; j < currLayerSize; j++ {

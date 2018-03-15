@@ -10,6 +10,12 @@ func transMul1dTo2d(d1 []float64, d2 [][]float64) (d2out [][]float64) {
 	return
 }
 
+// TODO: implement for backward propagation on input layer
+func dotProduct1d(a, b []float64) (d2out [][]float64) {
+	return
+}
+
+
 func augment(d2 [][]float64, d1 []float64) [][]float64 {
 	for i, v := range d1 {
 		d2[i] = append(d2[i], v)
@@ -26,13 +32,14 @@ func transSum2dTo1d(d2 [][]float64) (d1out []float64) {
 		}
 		d1out = append(d1out, sum)
 	}
+	return
 }
 
 type opsTrans2dTo1d struct {
-	operation func(float64) float64, error
+	operation func(float64) (float64, error)
 }
 
-func (t *opsTrans2dTo1d) transOp2dTo1d(d2 [][]float64) (d1out []float64, err error) {
+func (t *opsTrans2dTo1d) trans2dTo1d(d2 [][]float64) (d1out []float64, err error) {
 	var sum, operated  float64
 
 	for _, i := range d2 {

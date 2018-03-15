@@ -56,7 +56,7 @@ func Test_augment(t *testing.T) {
 		want [][]float64
 	}{
 		{
-			name: "appendAlongside",
+			name: "augment",
 			args: args{
 				d1: []float64{1, 1, 1, 1, 1},
 				d2: [][]float64{
@@ -80,6 +80,68 @@ func Test_augment(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := augment(tt.args.d2, tt.args.d1); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("appendAlongside() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_transSum2dTo1d(t *testing.T) {
+	type args struct {
+		d2 [][]float64
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantD1out []float64
+	}{
+		{
+			name:      "transSum",
+			args:      args{[][]float64{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}},
+			wantD1out: []float64{6, 15, 24},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotD1out := transSum2dTo1d(tt.args.d2); !reflect.DeepEqual(gotD1out, tt.wantD1out) {
+				t.Errorf("transSum2dTo1d() = %v, want %v", gotD1out, tt.wantD1out)
+			}
+		})
+	}
+}
+
+func Test_opsTrans2dTo1d_trans2dTo1d(t *testing.T) {
+	type fields struct {
+		operation func(float64) (float64, error)
+	}
+	type args struct {
+		d2 [][]float64
+	}
+	tests := []struct {
+		name      string
+		fields    fields
+		args      args
+		wantD1out []float64
+		wantErr   bool
+	}{
+		{
+			name:   "testOpsTransform",
+			fields: fields{func(a float64) (float64, error) { return a*2, nil }},
+			args:      args{[][]float64{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}},
+			wantD1out: []float64{12, 30, 48},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			o := &opsTrans2dTo1d{
+				operation: tt.fields.operation,
+			}
+			gotD1out, err := o.trans2dTo1d(tt.args.d2)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("opsTrans2dTo1d.trans2dTo1d() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotD1out, tt.wantD1out) {
+				t.Errorf("opsTrans2dTo1d.trans2dTo1d() = %v, want %v", gotD1out, tt.wantD1out)
 			}
 		})
 	}

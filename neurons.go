@@ -87,21 +87,10 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 
 func (l *inputDense) backward(eRRors []float64) (err error) {
 	// Exclude bias synapse
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
-	}
-	currLayerSize := l.currLayerSize
-	if l.bias {
-		currLayerSize--
-	}
-
-	if err = checkInputSize(len(eRRors), nextLayerSize); err != nil {
-		if err = checkInputSize(len(l.input), currLayerSize); err != nil {
-			lockErr := err.(locatedError)
-			err = lockErr.freeze()
-			return
-		}
+	if err = l.checkInput(eRRors); err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
+		return
 	}
 
 	if l.corrections == nil {

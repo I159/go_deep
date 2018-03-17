@@ -99,6 +99,14 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 }
 
 func (l *inputDense) backward(eRRors []float64) (err error) {
+	/*
+	The last step of backward propagation
+
+	Receive errors from a previous layer. Multiply error signal to saved input.
+	If bias exists append obtained corrections by error signal. If corrections
+	exist update it otherwise assign corrections by newly obtained corrections
+	vector.
+	*/
 	if err = l.checkInput(eRRors); err != nil {
 		lockErr := err.(locatedError)
 		err = lockErr.freeze()

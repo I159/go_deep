@@ -10,8 +10,18 @@ func transMul1dTo2d(d1 []float64, d2 [][]float64) (d2out [][]float64) {
 	return
 }
 
-// TODO: implement for backward propagation on input layer
+// TODO: test
 func dotProduct1d(a, b []float64) (d2out [][]float64) {
+	d2out = make([][]float64, len(b))
+	for i, v := range a {
+		for j, k := range b {
+			d2Out[j] = append(d2out, v * k)
+		}
+	}
+	return
+}
+
+func add2D(a, b [][]float64) [][]float64 {
 	return
 }
 

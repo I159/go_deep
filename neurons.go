@@ -6,7 +6,7 @@ package go_deep
 
 import "fmt"
 
-type cons1DChecker interface {
+type layerShaper1D interface {
 	checkInput(input []float64) error
 	isBias() bool
 }
@@ -65,7 +65,7 @@ func (l *sizesChecker) checkInput(input []float64) (err error) {
 
 type inputDense struct {
 	synapseInitializer
-	cons1DChecker
+	layerShaper1D
 	corrections, synapses [][]float64
 	learningRate          float64
 	input                 []float64
@@ -93,25 +93,11 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 		return
 	}
 
+	// TODO: test
 	if l.corrections == nil {
-		l.corrections = make([][]float64, l.currLayerSize)
-	}
-
-	// TODO: implement with separated dot product and update
-	// TODO: optimize later
-	for i := 0; i < nextLayerSize; i++ {
-		for j := 0; j < currLayerSize; j++ {
-			if l.corrections[j] == nil {
-				l.corrections[j] = make([]float64, nextLayerSize)
-			}
-			l.corrections[j][i] += eRRors[i] * l.input[j]
-		}
-		if l.bias {
-			if l.corrections[currLayerSize] == nil {
-				l.corrections[currLayerSize] = make([]float64, nextLayerSize)
-			}
-			l.corrections[currLayerSize][i] += eRRors[i]
-		}
+		l.corrections = dotProduct1d(l.input, eRRors)
+	} else {
+		l.corrections = add2D(l.corrections, dotProduct1d(l.input, eRRors))
 	}
 	return
 }

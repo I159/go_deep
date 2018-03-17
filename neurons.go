@@ -13,6 +13,7 @@ type layerShaper1D interface {
 
 type inputLayer interface {
 	synapseInitializer
+	layerShaper1D
 	forward([]float64) ([][]float64, error)
 	backward([]float64) error
 	applyCorrections(float64) error
@@ -34,16 +35,16 @@ type outputLayer interface {
 	backward(prediction, labels []float64) ([]float64, error)
 }
 
-type sizesChecker struct {
-	bias, nextBias                              bool
-	nextLayerSize, currLayerSize, prevLayerSize int
+type shapeInput struct {
+	bias, nextBias               bool
+	nextLayerSize, currLayerSize int
 }
 
-func (c *sizesChecker) isBias() bool {
+func (c *shapeInput) isBias() bool {
 	return c.bias
 }
 
-func (l *sizesChecker) checkInput(input []float64) (err error) {
+func (l *shapeInput) checkInput(input []float64) (err error) {
 	var currLayerSize = l.currLayerSize
 	if l.bias {
 		currLayerSize--
@@ -73,6 +74,8 @@ type inputDense struct {
 
 func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 	if err = l.checkInput(input); err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
 		return
 	}
 
@@ -86,17 +89,17 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 }
 
 func (l *inputDense) backward(eRRors []float64) (err error) {
-	// Exclude bias synapse
 	if err = l.checkInput(eRRors); err != nil {
 		lockErr := err.(locatedError)
 		err = lockErr.freeze()
 		return
 	}
 
-	// TODO: test
 	if l.corrections == nil {
+		// TODO: use eRRor as a bias correction if bias exists
 		l.corrections = dotProduct1d(l.input, eRRors)
 	} else {
+		// TODO: use eRRor as a bias correction if bias exists
 		l.corrections = add2D(l.corrections, dotProduct1d(l.input, eRRors))
 	}
 	return
@@ -136,7 +139,7 @@ func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) in
 			bias:     bias,
 			nextBias: nextBias,
 		},
-		sizesChecker: &sizesChecker{
+		layerShaper1D: &shapeInput{
 			currLayerSize: curr,
 			nextLayerSize: next,
 			bias:          bias != 0,

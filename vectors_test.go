@@ -124,8 +124,8 @@ func Test_opsTrans2dTo1d_trans2dTo1d(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name:   "testOpsTransform",
-			fields: fields{func(a float64) (float64, error) { return a*2, nil }},
+			name:      "testOpsTransform",
+			fields:    fields{func(a float64) (float64, error) { return a * 2, nil }},
 			args:      args{[][]float64{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}},
 			wantD1out: []float64{12, 30, 48},
 		},
@@ -142,6 +142,36 @@ func Test_opsTrans2dTo1d_trans2dTo1d(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotD1out, tt.wantD1out) {
 				t.Errorf("opsTrans2dTo1d.trans2dTo1d() = %v, want %v", gotD1out, tt.wantD1out)
+			}
+		})
+	}
+}
+
+func Test_dotProduct1d(t *testing.T) {
+	type args struct {
+		a []float64
+		b []float64
+	}
+	tests := []struct {
+		name      string
+		args      args
+		wantD2out [][]float64
+	}{
+		{
+			name: "doProfuct",
+			args: args{
+				a: []float64{3, 5, 7, 9},
+				b: []float64{2, 4, 6},
+			},
+			wantD2out: [][]float64{
+				{6, 12, 18}, {10, 20, 30}, {14, 28, 49}, {18, 36, 54}, {2, 4, 6},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotD2out := dotProduct1d(tt.args.a, tt.args.b); !reflect.DeepEqual(gotD2out, tt.wantD2out) {
+				t.Errorf("dotProduct1d() = %v, want %v", gotD2out, tt.wantD2out)
 			}
 		})
 	}

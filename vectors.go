@@ -22,7 +22,12 @@ func dotProduct1d(a, b []float64) (d2out [][]float64) {
 }
 
 func add2D(a, b [][]float64) [][]float64 {
-	return
+	for i := range a {
+		for j := range b {
+			a[i][j] += b[i][j]
+		}
+	}
+	return a
 }
 
 

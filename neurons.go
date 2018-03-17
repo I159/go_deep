@@ -1,6 +1,5 @@
 /*
-We simply need to calculate the backpropagated error signal that reaches that layer \delta_l
-and weight it by the feed-forward signal a_{l-1}feeding into that layer!
+Neurons layers recognition and learning.
 */
 package go_deep
 
@@ -73,6 +72,17 @@ type inputDense struct {
 }
 
 func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
+	/*
+		Propagate input signal forward
+
+		Receive input signal and check it to be consistent with current layer size.
+		Keep input for further backward propagation corrections computation. Multiply
+		input signal to synapses vector. Synapses is a 2D vector. A second dimension
+		vector is synapses of an input layer neuron with all neurons of a hidden
+		layer. If bias exists on an input layer then bias synapses placed in the last
+		synapses second dimension layer will be augmented to output signal and passed
+		to the first hidden layer.
+	*/
 	if err = l.checkInput(input); err != nil {
 		lockErr := err.(locatedError)
 		err = lockErr.freeze()
@@ -95,12 +105,15 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 		return
 	}
 
+	corrections := dotProduct1d(l.input, eRRors)
+	if l.isBias() {
+		corrections = append(corrections, eRRors)
+	}
+
 	if l.corrections == nil {
-		// TODO: use eRRor as a bias correction if bias exists
-		l.corrections = dotProduct1d(l.input, eRRors)
+		l.corrections = corrections
 	} else {
-		// TODO: use eRRor as a bias correction if bias exists
-		l.corrections = add2D(l.corrections, dotProduct1d(l.input, eRRors))
+		l.corrections = add2D(l.corrections, corrections)
 	}
 	return
 }

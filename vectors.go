@@ -10,7 +10,6 @@ func transMul1dTo2d(d1 []float64, d2 [][]float64) (d2out [][]float64) {
 	return
 }
 
-// TODO: test
 func dotProduct1d(a, b []float64) (d2out [][]float64) {
 	d2out = make([][]float64, len(b))
 	for i, v := range a {

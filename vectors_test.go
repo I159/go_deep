@@ -176,3 +176,24 @@ func Test_dotProduct1d(t *testing.T) {
 		})
 	}
 }
+
+func Test_add2D(t *testing.T) {
+	type args struct {
+		a [][]float64
+		b [][]float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want [][]float64
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := add2D(tt.args.a, tt.args.b); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("add2D() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

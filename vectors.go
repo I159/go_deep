@@ -1,6 +1,9 @@
 package go_deep
 
 func transMul1dTo2d(d1 []float64, d2 [][]float64) (d2out [][]float64) {
+	// Columnwise multiplication of a single dimensional vector to a two 
+	// dimensional vector. Result is a two dimensional vector with row size
+	// equals to a column of two dimensional vector.
 	d2out = make([][]float64, len(d2[0]))
 	for i, v := range d1 {
 		for j, k := range d2[i] {
@@ -12,9 +15,10 @@ func transMul1dTo2d(d1 []float64, d2 [][]float64) (d2out [][]float64) {
 
 // TODO: test
 func mul1dTo2d(d1 []float64, d2 [][]float64) (d2out [][]float64) {
-	for i, v := range d1 {
-		for j, k := range d2[i] {
-			d2out[i] = append(d2out, v*k)
+	d2out = make([][]float64, len(d2))
+	for i, v := range d2 {
+		for j, k := range d1 {
+			d2out[i] = append(d2out[i], v[j] * k)
 		}
 	}
 	return

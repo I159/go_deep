@@ -265,20 +265,22 @@ func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err
 		return
 	}
 
+	// TODO: apply function to a vector. Separate to an operation.
 	var derived []float64
 	var der float64
 	for _, v := range l.input {
 		der, err = l.actDerivative(v)
-		derived := append(derived, der)
+		derived = append(derived, der)
 		if err != nil {
 			return
 		}
 	}
-	errSums := mul1dTo2d(eRRors, l.synapses)
 
-	// TODO: substitlute to a vector operation
-	for i := 0; i < currLayerSize; i++ {
-		prevLayerErrors = append(prevLayerErrors, actDer*eRRSum)
+	errSums := transSum2dTo1d(mul1dTo2d(eRRors, l.synapses))
+
+	// TODO: substitute to a vector operation
+	for i, eRRsum := range errSums {
+		prevLayerErrors = append(prevLayerErrors, derived[i]*eRRsum)
 	}
 	return
 }

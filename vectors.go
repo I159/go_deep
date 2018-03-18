@@ -14,7 +14,7 @@ func dotProduct1d(a, b []float64) (d2out [][]float64) {
 	d2out = make([][]float64, len(b))
 	for i, v := range a {
 		for j, k := range b {
-			d2Out[j] = append(d2out, v * k)
+			d2Out[j] = append(d2out, v*k)
 		}
 	}
 	return
@@ -28,7 +28,6 @@ func add2D(a, b [][]float64) [][]float64 {
 	}
 	return a
 }
-
 
 func augment(d2 [][]float64, d1 []float64) [][]float64 {
 	for i, v := range d1 {
@@ -45,29 +44,6 @@ func transSum2dTo1d(d2 [][]float64) (d1out []float64) {
 			sum += j
 		}
 		d1out = append(d1out, sum)
-	}
-	return
-}
-
-type opsTrans2dTo1d struct {
-	operation func(float64) (float64, error)
-}
-
-func (t *opsTrans2dTo1d) trans2dTo1d(d2 [][]float64) (d1out []float64, err error) {
-	var sum, operated  float64
-
-	for _, i := range d2 {
-		sum = 0
-		for _, j := range i {
-			sum += j
-		}
-
-		operated, err = t.operation(sum)
-		if err != nil {
-			return
-		}
-
-		d1out = append(d1out, operated)
 	}
 	return
 }

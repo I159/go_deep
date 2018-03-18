@@ -158,7 +158,7 @@ func Test_dotProduct1d(t *testing.T) {
 		wantD2out [][]float64
 	}{
 		{
-			name: "doProfuct",
+			name: "doProduct",
 			args: args{
 				a: []float64{3, 5, 7, 9},
 				b: []float64{2, 4, 6},
@@ -187,7 +187,20 @@ func Test_add2D(t *testing.T) {
 		args args
 		want [][]float64
 	}{
-	// TODO: Add test cases.
+		{
+			name: "add 2d to 2d",
+			args: args{
+				a: [][]float64{
+					{6, 12, 18}, {10, 20, 30}, {14, 28, 49}, {18, 36, 54}, {2, 4, 6},
+				},
+				a: [][]float64{
+					{1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1}, {1, 1, 1},
+				},
+			},
+			wantD2out: [][]float64{
+				{7, 13, 19}, {11, 21, 31}, {15, 29, 50}, {19, 37, 55}, {3, 5, 7},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

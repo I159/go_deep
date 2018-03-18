@@ -10,12 +10,17 @@ type layerShaper1D interface {
 	isBias() bool
 }
 
+type layerShaper2D interface {
+	checkInput(input [][]float64) error
+	isBias() bool
+}
+
 type inputLayer interface {
 	synapseInitializer
 	layerShaper1D
 	forward([]float64) ([][]float64, error)
 	backward([]float64) error
-	applyCorrections(float64) error
+	applyCorrections(float64)
 }
 
 type hiddenLayer interface {
@@ -44,6 +49,35 @@ func (c *shapeInput) isBias() bool {
 }
 
 func (l *shapeInput) checkInput(input []float64) (err error) {
+	var currLayerSize = l.currLayerSize
+	if l.bias {
+		currLayerSize--
+	}
+	if len(input) != currLayerSize {
+		err = locatedError{
+			fmt.Sprintf(
+				"Input is not relevant. Input: %d Layer: %d Bias: %t",
+				len(input),
+				l.currLayerSize,
+				l.bias,
+			),
+		}
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
+	}
+	return
+}
+
+type shapeHidden struct {
+	bias, nextBias                              bool
+	prevLayerSize, nextLayerSize, currLayerSize int
+}
+
+func (c *shapeHidden) isBias() bool {
+	return c.bias
+}
+
+func (l *shapeHidden) checkInput(input [][]float64) (err error) {
 	var currLayerSize = l.currLayerSize
 	if l.bias {
 		currLayerSize--
@@ -100,12 +134,12 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 
 func (l *inputDense) backward(eRRors []float64) (err error) {
 	/*
-	The last step of backward propagation
+		The last step of backward propagation
 
-	Receive errors from a previous layer. Multiply error signal to saved input.
-	If bias exists append obtained corrections by error signal. If corrections
-	exist update it otherwise assign corrections by newly obtained corrections
-	vector.
+		Receive errors from a previous layer. Multiply error signal to saved input.
+		If bias exists append obtained corrections by error signal. If corrections
+		exist update it otherwise assign corrections by newly obtained corrections
+		vector.
 	*/
 	if err = l.checkInput(eRRors); err != nil {
 		lockErr := err.(locatedError)
@@ -126,29 +160,14 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 	return
 }
 
-func (l *inputDense) applyCorrections(batchSize float64) (err error) {
-	if err = areCorrsConsistent(len(l.corrections), l.currLayerSize, len(l.synapses)); err != nil {
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
-		return
-	}
-
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
-	}
-
-	for i := 0; i < l.currLayerSize; i++ {
-		if err = areCorrsConsistent(len(l.corrections[i]), nextLayerSize, len(l.synapses[i])); err != nil {
-			return
-		}
-		for j := 0; j < nextLayerSize; j++ {
+// TODO: apply decomposition
+func (l *inputDense) applyCorrections(batchSize float64) {
+	for i, v := range l.synapses {
+		for j := range v {
 			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
 	l.corrections = nil
-
-	return
 }
 
 func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) inputLayer {
@@ -175,39 +194,29 @@ func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) in
 type hiddenDense struct {
 	activation
 	synapseInitializer
-	prevLayerSize, currLayerSize, nextLayerSize int
-	learningRate                                float64
-	corrections, synapses                       [][]float64
-	activated, input                            []float64
-	nextBias, bias                              bool // Indicate do biases on a current layer and a next one exist
+	layerShaper2D
+	learningRate          float64
+	corrections, synapses [][]float64
+	activated, input      []float64
 }
 
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error) {
-	// Input lesser than a layer size because bias has no input.
-	if err = areSizesConsistent(len(input), l.currLayerSize, len(l.synapses), true); err != nil {
-		lockErr := err.(locatedError)
+	if err = l.checkInput(input); err != nil {
+		lockErr:=err.(locatedError)
 		err = lockErr.freeze()
 		return
 	}
 
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
-	}
-	currLayerSize := l.currLayerSize
-	if l.bias {
-		currLayerSize--
-	}
-
-	output = make([][]float64, l.nextLayerSize)
-
-	operationTransform := opsTrans2dTo1d{l.activate}
-	l.activated, err = operationTransform.trans2dTo1d(input)
-	if err != nil {
-		return
-	}
 	l.input = transSum2dTo1d(input)
+	// TODO: separate into applyOperaion vector operation
+	for i, v := range l.input {
+		l.activated[i] , err = l.activate(v)
+		if err != nil {
+			return
+		}
+	}
 
+	// TODO: separate into a vector operation
 	for i := 0; i < nextLayerSize; i++ {
 		for j := 0; j < currLayerSize; j++ {
 			output[i] = append(output[i], l.synapses[j][i]*l.activated[j])
@@ -323,12 +332,14 @@ func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation
 				nextBias: nextBias,
 			},
 		},
-		prevLayerSize: prev,
-		currLayerSize: curr,
-		nextLayerSize: next,
-		learningRate:  learningRate,
-		nextBias:      nextBias,
-		bias:          bias != 0,
+		layerShaper2D: &shapeHidden{
+			prevLayerSize: prev,
+			currLayerSize: curr,
+			nextLayerSize: next,
+			nextBias:      nextBias,
+			bias:          bias != 0,
+		},
+		learningRate: learningRate,
 	}
 	layer.synapses = layer.init()
 	return layer

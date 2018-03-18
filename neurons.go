@@ -5,19 +5,20 @@ package go_deep
 
 import "fmt"
 
-type layerShaper1D interface {
+type inputLayerShaper interface {
 	checkInput(input []float64) error
 	isBias() bool
 }
 
-type layerShaper2D interface {
+type hiddenLayerShaper interface {
 	checkInput(input [][]float64) error
+	checkBackInput(input []float64) error
 	isBias() bool
 }
 
 type inputLayer interface {
 	synapseInitializer
-	layerShaper1D
+	inputLayerShaper
 	forward([]float64) ([][]float64, error)
 	backward([]float64) error
 	applyCorrections(float64)
@@ -62,8 +63,6 @@ func (l *shapeInput) checkInput(input []float64) (err error) {
 				l.bias,
 			),
 		}
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
 	}
 	return
 }
@@ -78,7 +77,7 @@ func (c *shapeHidden) isBias() bool {
 }
 
 func (l *shapeHidden) checkInput(input [][]float64) (err error) {
-	var currLayerSize = l.currLayerSize
+	currLayerSize := l.currLayerSize
 	if l.bias {
 		currLayerSize--
 	}
@@ -91,15 +90,31 @@ func (l *shapeHidden) checkInput(input [][]float64) (err error) {
 				l.bias,
 			),
 		}
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
+	}
+	return
+}
+
+func (l *shapeHidden) checkBackInput(input []float64) (err error) {
+	nextLayerSize := l.nextLayerSize
+	if l.nextBias {
+		nextLayerSize--
+	}
+	if len(input) != nextLayerSize {
+		err = locatedError{
+			fmt.Sprintf(
+				"Input is not relevant. Input: %d Layer: %d Bias: %t",
+				len(input),
+				l.currLayerSize,
+				l.bias,
+			),
+		}
 	}
 	return
 }
 
 type inputDense struct {
 	synapseInitializer
-	layerShaper1D
+	inputLayerShaper
 	corrections, synapses [][]float64
 	learningRate          float64
 	input                 []float64
@@ -179,7 +194,7 @@ func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) in
 			bias:     bias,
 			nextBias: nextBias,
 		},
-		layerShaper1D: &shapeInput{
+		inputLayerShaper: &shapeInput{
 			currLayerSize: curr,
 			nextLayerSize: next,
 			bias:          bias != 0,
@@ -194,7 +209,7 @@ func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) in
 type hiddenDense struct {
 	activation
 	synapseInitializer
-	layerShaper2D
+	hiddenLayerShaper
 	learningRate          float64
 	corrections, synapses [][]float64
 	activated, input      []float64
@@ -202,7 +217,7 @@ type hiddenDense struct {
 
 func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error) {
 	if err = l.checkInput(input); err != nil {
-		lockErr:=err.(locatedError)
+		lockErr := err.(locatedError)
 		err = lockErr.freeze()
 		return
 	}
@@ -210,59 +225,47 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 	l.input = transSum2dTo1d(input)
 	// TODO: separate into applyOperaion vector operation
 	for i, v := range l.input {
-		l.activated[i] , err = l.activate(v)
+		l.activated[i], err = l.activate(v)
 		if err != nil {
 			return
 		}
 	}
 
-	// TODO: separate into a vector operation
-	for i := 0; i < nextLayerSize; i++ {
-		for j := 0; j < currLayerSize; j++ {
-			output[i] = append(output[i], l.synapses[j][i]*l.activated[j])
-		}
-		if l.bias {
-			output[i] = append(output[i], l.synapses[currLayerSize][i])
-		}
+	output = transMul1dTo2d(l.activated, l.synapses)
+	if l.isBias() {
+		output = augment(output, l.synapses[len(l.synapses)-1])
 	}
 	return
 }
 
-func (l *hiddenDense) updateCorrections(eRRors []float64) [][]float64 {
-	currLayerSize := l.currLayerSize
-	if l.bias {
-		currLayerSize--
-	}
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
+func (l *hiddenDense) updateCorrections(eRRors []float64) (err error) {
+	if err = l.checkBackInput(eRRors); err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
+		return
 	}
 
-	// Collect corrections for further forward error propagation
+	corrections := dotProduct1d(l.activated, eRRors)
+	if l.isBias() {
+		corrections = append(corrections, eRRors)
+	}
+
 	if l.corrections == nil {
-		l.corrections = make([][]float64, l.currLayerSize)
+		l.corrections = corrections
+	} else {
+		l.corrections = add2D(l.corrections, corrections)
 	}
-
-	for i := 0; i < nextLayerSize; i++ {
-		for j := 0; j < currLayerSize; j++ {
-			if l.corrections[j] == nil {
-				l.corrections[j] = make([]float64, l.nextLayerSize)
-			}
-			l.corrections[j][i] += l.activated[j] * eRRors[i]
-		}
-		// Apply bias error signal
-		if l.corrections[currLayerSize] == nil {
-			l.corrections[currLayerSize] = make([]float64, nextLayerSize)
-		}
-		l.corrections[currLayerSize][i] += eRRors[i]
-	}
-	return l.corrections
+	return
 }
 
 func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err error) {
 	// Propagate backward from hidden to a previous hidden or input layer
 	// Single error signal per neuron.
-	l.corrections = l.updateCorrections(eRRors)
+	if err = l.updateCorrections(eRRors); err != nil {
+		lockErr := err.(locatedError)
+		err = lockErr.freeze()
+		return
+	}
 
 	nextLayerSize := l.nextLayerSize
 	if l.nextBias {

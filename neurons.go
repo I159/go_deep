@@ -259,37 +259,25 @@ func (l *hiddenDense) updateCorrections(eRRors []float64) (err error) {
 }
 
 func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err error) {
-	// Propagate backward from hidden to a previous hidden or input layer
-	// Single error signal per neuron.
 	if err = l.updateCorrections(eRRors); err != nil {
 		lockErr := err.(locatedError)
 		err = lockErr.freeze()
 		return
 	}
 
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
-	}
-	currLayerSize := l.currLayerSize
-	if l.bias {
-		currLayerSize--
-	}
-
-	// Bias is not connected with previous layer so exclude the last synapse
-	// From both previous layer errors vector and a current one.
-	var eRRSum, actDer float64
-	for i := 0; i < currLayerSize; i++ {
-
-		actDer, err = l.actDerivative(l.input[i])
+	var derived []float64
+	var der float64
+	for _, v := range l.input {
+		der, err = l.actDerivative(v)
+		derived := append(derived, der)
 		if err != nil {
 			return
 		}
+	}
+	errSums := mul1dTo2d(eRRors, l.synapses)
 
-		eRRSum = 0
-		for j := 0; j < nextLayerSize; j++ {
-			eRRSum += l.synapses[i][j] * eRRors[j]
-		}
+	// TODO: substitlute to a vector operation
+	for i := 0; i < currLayerSize; i++ {
 		prevLayerErrors = append(prevLayerErrors, actDer*eRRSum)
 	}
 	return

@@ -64,6 +64,12 @@ func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (cost
 
 			batchCounter++
 		}
+
+		// Don't forget to apply correction of the last iteration
+		// in case of incomplete batch.
+		if err = n.applyCorrections(float64(batchSize)); err != nil {
+			return
+		}
 	}
 	return costGradient, nil
 }

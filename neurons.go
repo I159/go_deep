@@ -60,6 +60,9 @@ func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
 		for j := 0; j < currLayerSize; j++ {
 			output[i] = append(output[i], l.synapses[j][i]*input[j])
 		}
+		if l.bias {
+			output[i] = append(output[i], l.synapses[currLayerSize][i])
+		}
 	}
 	return
 }
@@ -92,7 +95,9 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 			if l.corrections[j] == nil {
 				l.corrections[j] = make([]float64, nextLayerSize)
 			}
-			l.corrections[j][i] += eRRors[i] * l.input[j]
+			// Input layer doesn't use activation so to obtain correction we need to 
+			// use input as it is.
+			l.corrections[j][i] += eRRors[i] * l.input[j] 
 		}
 		if l.bias {
 			if l.corrections[currLayerSize] == nil {
@@ -178,15 +183,9 @@ func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error)
 	var inputSum, actValue float64
 	output = make([][]float64, l.nextLayerSize)
 
-	// Activated output used at backward propagation, but obviously filled
-	// not only after backprop. For correct accumulation of activated
-	// output values required cleanup before forward propagation but not after backward.
 	l.activated = nil
 	l.input = nil
 	for i := 0; i < currLayerSize; i++ {
-		//for _, i := range input {
-
-		// TODO: could be optimized. Don't collect input out of learning process.
 		inputSum = 0
 		for _, j := range input[i] {
 			inputSum += j

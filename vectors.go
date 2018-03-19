@@ -26,9 +26,9 @@ func mul1dTo2d(d1 []float64, d2 [][]float64) (d2out [][]float64) {
 
 func dotProduct1d(a, b []float64) (d2out [][]float64) {
 	d2out = make([][]float64, len(b))
-	for i, v := range a {
+	for _, v := range a {
 		for j, k := range b {
-			d2Out[j] = append(d2out, v*k)
+			d2out[j] = append(d2out[j], v*k)
 		}
 	}
 	return

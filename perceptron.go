@@ -31,7 +31,8 @@ func (l *Perceptron) applyCorrections(batchSize float64) (err error) {
 			return
 		}
 	}
-	return l.input.applyCorrections(batchSize)
+	l.input.applyCorrections(batchSize)
+	return
 }
 
 func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64, err error) {

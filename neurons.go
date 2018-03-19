@@ -1,6 +1,8 @@
 /*
 Neurons layers recognition and learning.
 */
+// TODO: layer of neurons is a chain of matrix operations.
+// Implement layer as a chain of matrix transformations.
 package go_deep
 
 import "fmt"
@@ -14,6 +16,10 @@ type hiddenLayerShaper interface {
 	checkInput(input [][]float64) error
 	checkBackInput(input []float64) error
 	isBias() bool
+}
+
+type outputLayerShaper interface {
+	checkInput(input [][]float64) error
 }
 
 type inputLayer interface {
@@ -106,6 +112,23 @@ func (l *shapeHidden) checkBackInput(input []float64) (err error) {
 				len(input),
 				l.currLayerSize,
 				l.bias,
+			),
+		}
+	}
+	return
+}
+
+type shapeOutput struct {
+	prevLayerSize, currLayerSize int
+}
+
+func (s *shapeOutput) checkInput(input [][]float64) (err error) {
+	if len(input) != s.currLayerSize {
+		err = locatedError{
+			fmt.Sprintf(
+				"Input is not relevant. Input: %d Layer: %d\n",
+				len(input),
+				s.currLayerSize,
 			),
 		}
 	}
@@ -285,26 +308,10 @@ func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err
 	return
 }
 
-// FIXME: refactor this crap. Should be implemented in a single place.
+// FIXME: DRY
 func (l *hiddenDense) applyCorrections(batchSize float64) (err error) {
-	if err = areCorrsConsistent(len(l.corrections), l.currLayerSize, len(l.synapses)); err != nil {
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
-		return
-	}
-
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
-	}
-
-	for i := 0; i < l.currLayerSize; i++ {
-		if err = areCorrsConsistent(len(l.corrections[i]), nextLayerSize, len(l.synapses[i])); err != nil {
-			lockErr := err.(locatedError)
-			err = lockErr.freeze()
-			return
-		}
-		for j := 0; j < nextLayerSize; j++ {
+	for i, v := range l.synapses {
+		for j := range v {
 			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
@@ -325,7 +332,7 @@ func newHiddenDense(prev, curr, next int, bias, learningRate float64, activation
 				nextBias: nextBias,
 			},
 		},
-		layerShaper2D: &shapeHidden{
+		hiddenLayerShaper: &shapeHidden{
 			prevLayerSize: prev,
 			currLayerSize: curr,
 			nextLayerSize: next,
@@ -344,31 +351,25 @@ type outputDense struct {
 	// as a sum of weighted errors. Thus cost function is global for a network.
 	input []float64
 	cost
-	prevLayerSize, currLayerSize int
+	outputLayerShaper
 }
 
 func (l *outputDense) forward(rowInput [][]float64) (output []float64, err error) {
-	if err = checkInputSize(len(rowInput), l.currLayerSize); err != nil {
+	if err = l.checkInput(rowInput); err != nil {
 		lockErr := err.(locatedError)
 		err = lockErr.freeze()
 		return
 	}
 
-	var iSum, actVal float64
-
-	l.input = nil
-	for _, raw := range rowInput {
-		iSum = 0
-		for _, item := range raw {
-			iSum += item
-		}
-
-		l.input = append(l.input, iSum)
-		actVal, err = l.activate(iSum)
+	l.input = transSum2dTo1d(rowInput)
+	var activated float64
+	// TODO: separate into applyOperaion vector operation
+	for _, v := range l.input {
+		activated, err = l.activate(v)
 		if err != nil {
 			return
 		}
-		output = append(output, actVal)
+		output = append(output, activated)
 	}
 	return
 }
@@ -399,9 +400,11 @@ func (l *outputDense) backward(prediction []float64, labels []float64) (eRRors [
 
 func newOutput(prev, curr int, activation activation, cost cost) outputLayer {
 	return &outputDense{
-		activation:    activation,
-		cost:          cost,
-		prevLayerSize: prev,
-		currLayerSize: curr,
+		activation: activation,
+		cost:       cost,
+		outputLayerShaper: &shapeOutput{
+			prevLayerSize: prev,
+			currLayerSize: curr,
+		},
 	}
 }

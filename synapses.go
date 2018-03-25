@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const SCALING_BASE = .7
+const scalingBase = .7
 
 type synapseInitializer interface {
 	init() [][]float64
@@ -76,7 +76,7 @@ func (s *hiddenDenseSynapses) nguyenWiderow() {
 	}
 
 	var norm float64
-	beta := SCALING_BASE * math.Pow(float64(s.curr), 1.0/float64(s.prev))
+	beta := scalingBase * math.Pow(float64(s.curr), 1.0/float64(s.prev))
 
 	for i := 0; i < curr; i++ {
 		norm = 0

@@ -1,7 +1,10 @@
-package go_deep
+package goDeep
 
 import "fmt"
 
+/*
+Perceptron is MLP implementation of a Network interface.
+*/
 type Perceptron struct {
 	input  inputLayer
 	hidden []hiddenLayer
@@ -25,15 +28,16 @@ func (n *Perceptron) backward(prediction []float64, labels []float64) (err error
 	return n.input.backward(backpropErrs)
 }
 
-func (l *Perceptron) applyCorrections(batchSize float64) (err error) {
-	for _, l := range l.hidden {
+func (n *Perceptron) applyCorrections(batchSize float64) (err error) {
+	for _, l := range n.hidden {
 		if err = l.applyCorrections(batchSize); err != nil {
 			return
 		}
 	}
-	return l.input.applyCorrections(batchSize)
+	return n.input.applyCorrections(batchSize)
 }
 
+// Learn generalization of back propagation for all layers defined in the network
 func (n *Perceptron) Learn(set, labels [][]float64, epochs, batchSize int) (costGradient []float64, err error) {
 	// Use Recognize loop to get recognition results and hidden layer intermediate results.
 	// Loop backward using obtained results for learning
@@ -109,6 +113,7 @@ func (n *Perceptron) forwardMeasure(rowInput, labels []float64) (prediction []fl
 	return n.output.forwardMeasure(fwdProp, labels)
 }
 
+// Recognize is a generalization of forward propagation for all layers defined in the network
 func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64, err error) {
 	var pred []float64
 
@@ -122,22 +127,28 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64, err err
 	return
 }
 
+// InputShape is an intuitive input layer representation. Designed to 
+//pass declaration arguments in intuitive form.
 type InputShape struct {
 	Size               int
 	LearningRate, Bias float64
 }
+// HiddenShape is intuitive hidden layer representation. Designed to 
+// pass declaration arguments in intuitive form.
 type HiddenShape struct {
 	Size               int
 	LearningRate, Bias float64
 	Activation         activation
 }
-
+// OutputShape is intuitive output layer representation. Designed to 
+// pass declaration arguments in intuitive form.
 type OutputShape struct {
 	Size       int
 	Activation activation
 	Cost       cost
 }
 
+// NewPerceptron is a MLP initializer
 func NewPerceptron(inputShape InputShape, hiddenShapes []HiddenShape, outputShape OutputShape) Network {
 	return &Perceptron{
 		input: newInputDense(

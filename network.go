@@ -1,4 +1,4 @@
-package go_deep
+package goDeep
 
 type backwardPropagation interface {
 	forward(set []float64) (output []float64, err error)
@@ -7,6 +7,11 @@ type backwardPropagation interface {
 	applyCorrections(float64) error
 }
 
+/*
+Network is a public interface for actual library usage.
+
+Network interface defines abstract neural network with back propagation.
+*/
 type Network interface {
 	backwardPropagation
 	Learn(set, labels [][]float64, epochs int, batchSize int) ([]float64, error)

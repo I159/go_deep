@@ -1,8 +1,4 @@
-/*
-We simply need to calculate the backpropagated error signal that reaches that layer \delta_l
-and weight it by the feed-forward signal a_{l-1}feeding into that layer!
-*/
-package go_deep
+package goDeep
 
 type inputLayer interface {
 	synapseInitializer
@@ -126,7 +122,7 @@ func (l *inputDense) applyCorrections(batchSize float64) (err error) {
 			return
 		}
 		for j := 0; j < nextLayerSize; j++ {
-			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
+			l.synapses[i][j] -= l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
 	l.corrections = nil
@@ -295,7 +291,7 @@ func (l *hiddenDense) applyCorrections(batchSize float64) (err error) {
 			return
 		}
 		for j := 0; j < nextLayerSize; j++ {
-			l.synapses[i][j] += l.learningRate * l.corrections[i][j] / batchSize
+			l.synapses[i][j] -= l.learningRate * l.corrections[i][j] / batchSize
 		}
 	}
 	l.corrections = nil

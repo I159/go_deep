@@ -1,4 +1,4 @@
-package go_deep
+package goDeep
 
 import (
 	"fmt"
@@ -10,12 +10,23 @@ type activation interface {
 	actDerivative(float64) (float64, error)
 }
 
-type Sigmoid struct {}
+/*
+Sigmoid activation function defines the output of a node given an input or set of inputs.
 
-func (s *Sigmoid) activate(n float64) (float64, error) {
-	exp := math.Exp(n)
+A sigmoid function is a mathematical function having a characteristic "S"-shaped curve or sigmoid curve.
+Often, sigmoid function refers to the special case of the logistic function shown in the first figure and defined by the formula:
+
+     1
+ --------
+ 1 + e^-x
+
+*/
+type Sigmoid struct{}
+
+func (s *Sigmoid) activate(x float64) (float64, error) {
+	exp := math.Exp(-x)
 	if exp == 0 || math.IsInf(exp, 0) {
-		return 0, fmt.Errorf("The activation value is too large: %f", n)
+		return 0, fmt.Errorf("The activation value is too large: %f", x)
 	}
 	return 1 / (1 + exp), nil
 }

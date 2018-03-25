@@ -1,4 +1,4 @@
-package go_deep
+package goDeep
 
 import (
 	"reflect"
@@ -535,7 +535,7 @@ func Test_hiddenDense_applyCorrections(t *testing.T) {
 					{2, 8, 18}, {3, 12, 27}, {4, 16, 36}, {5, 20, 45}, {1, 4, 9},
 				},
 				synapses: [][]float64{
-					{-2, -8, -18}, {-3, -12, -27}, {-4, -16, -36}, {-5, -20, -45}, {-1, -4, -9},
+					{2, 8, 18}, {3, 12, 27}, {4, 16, 36}, {5, 20, 45}, {1, 4, 9},
 				},
 				bias: true,
 			},

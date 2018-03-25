@@ -1,5 +1,7 @@
 # GO DEEP
 [![Build Status](https://travis-ci.org/I159/go_deep.svg?branch=master)](https://travis-ci.org/I159/go_deep)
+[![Code Climate](https://codeclimate.com/github/I159/go_deep/badges/gpa.svg)](https://codeclimate.com/github/I159/go_deep)
+[![Test Coverage](https://codeclimate.com/github/I159/go_deep/badges/coverage.svg)](https://codeclimate.com/github/I159/go_deep/coverage)
 
 ## Motivation
 

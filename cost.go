@@ -1,4 +1,4 @@
-package go_deep
+package goDeep
 
 import "math"
 

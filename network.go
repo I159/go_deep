@@ -1,4 +1,4 @@
-package go_deep
+package goDeep
 
 type backwardPropagation interface {
 	forward(set []float64) (output []float64, err error)

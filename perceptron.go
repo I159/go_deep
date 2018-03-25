@@ -127,20 +127,22 @@ func (n *Perceptron) Recognize(set [][]float64) (prediction [][]float64, err err
 	return
 }
 
-// InputShape is an intuitive input layer representation. Designed to 
+// InputShape is an intuitive input layer representation. Designed to
 //pass declaration arguments in intuitive form.
 type InputShape struct {
 	Size               int
 	LearningRate, Bias float64
 }
-// HiddenShape is intuitive hidden layer representation. Designed to 
+
+// HiddenShape is intuitive hidden layer representation. Designed to
 // pass declaration arguments in intuitive form.
 type HiddenShape struct {
 	Size               int
 	LearningRate, Bias float64
 	Activation         activation
 }
-// OutputShape is intuitive output layer representation. Designed to 
+
+// OutputShape is intuitive output layer representation. Designed to
 // pass declaration arguments in intuitive form.
 type OutputShape struct {
 	Size       int

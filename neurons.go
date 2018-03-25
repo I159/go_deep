@@ -91,9 +91,9 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 			if l.corrections[j] == nil {
 				l.corrections[j] = make([]float64, nextLayerSize)
 			}
-			// Input layer doesn't use activation so to obtain correction we need to 
+			// Input layer doesn't use activation so to obtain correction we need to
 			// use input as it is.
-			l.corrections[j][i] += eRRors[i] * l.input[j] 
+			l.corrections[j][i] += eRRors[i] * l.input[j]
 		}
 		if l.bias {
 			if l.corrections[currLayerSize] == nil {

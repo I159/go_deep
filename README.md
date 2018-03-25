@@ -1,4 +1,5 @@
 # GO DEEP
+[![Build Status](https://travis-ci.org/I159/go_deep.svg?branch=master)](https://travis-ci.org/I159/go_deep)
 
 ## Motivation
 

@@ -1,7 +1,3 @@
-/*
-We simply need to calculate the backpropagated error signal that reaches that layer \delta_l
-and weight it by the feed-forward signal a_{l-1}feeding into that layer!
-*/
 package goDeep
 
 type inputLayer interface {

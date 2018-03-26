@@ -33,7 +33,9 @@ type inputDense struct {
 	nextBias                     bool
 }
 
-func (l *inputDense) forward(input []float64) (output [][]float64, err error) {
+// TODO: 									  (output []float64, err error)
+func (l *inputDense) forward(input []float64) ([][]float64, error) {
+	// TODO: return go_vectorize.Dot1D2D(input, l.synapses)
 	if err = areSizesConsistent(len(input), l.currLayerSize, len(l.synapses), false); err != nil {
 		lockErr := err.(locatedError)
 		err = lockErr.freeze()

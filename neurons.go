@@ -1,8 +1,12 @@
 package goDeep
 
+import (
+	"github.com/I159/go_vectorize"
+)
+
 type inputLayer interface {
 	synapseInitializer
-	forward([]float64) ([][]float64, error)
+	forward([]float64) ([]float64, error)
 	backward([]float64) error
 	applyCorrections(float64) error
 }
@@ -10,7 +14,7 @@ type inputLayer interface {
 type hiddenLayer interface {
 	activation
 	synapseInitializer
-	forward([][]float64) ([][]float64, error)
+	forward([]float64) ([]float64, error)
 	backward([]float64) ([]float64, error)
 	applyCorrections(float64) error
 }
@@ -18,7 +22,7 @@ type hiddenLayer interface {
 type outputLayer interface {
 	activation
 	cost
-	forwardMeasure([][]float64, []float64) ([]float64, float64, error)
+	forwardMeasure([]float64, []float64) ([]float64, float64, error)
 	forward(rowInput [][]float64) ([]float64, error)
 	backward(prediction, labels []float64) ([]float64, error)
 }
@@ -28,39 +32,17 @@ type inputDense struct {
 	corrections, synapses        [][]float64
 	nextLayerSize, currLayerSize int
 	learningRate                 float64
-	input                        []float64
-	bias                         bool
-	nextBias                     bool
+	biases, input                []float64
 }
 
-// TODO: 									  (output []float64, err error)
-func (l *inputDense) forward(input []float64) ([][]float64, error) {
-	// TODO: return go_vectorize.Dot1D2D(input, l.synapses)
-	if err = areSizesConsistent(len(input), l.currLayerSize, len(l.synapses), false); err != nil {
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
+func (l *inputDense) forward(input []float64) (output []float64, err error) {
+	l.input = input
+	output, err = goVectorize.Dot1D2D(input, l.synapses)
+	if err != nil {
 		return
 	}
-
-	l.input = input
-
-	// Exclude bias synapse
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
-	}
-	currLayerSize := l.currLayerSize
-	if l.bias {
-		currLayerSize--
-	}
-	output = make([][]float64, nextLayerSize)
-	for i := 0; i < nextLayerSize; i++ {
-		for j := 0; j < currLayerSize; j++ {
-			output[i] = append(output[i], l.synapses[j][i]*input[j])
-		}
-		if l.bias {
-			output[i] = append(output[i], l.synapses[currLayerSize][i])
-		}
+	if l.biases != nil {
+		output, err = goVectorize.Add(output, l.biases)
 	}
 	return
 }

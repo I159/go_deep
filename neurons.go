@@ -120,14 +120,15 @@ func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) in
 			prev:     1,
 			curr:     curr,
 			next:     next,
-			bias:     bias,
-			nextBias: nextBias,
 		},
 		currLayerSize: curr,
 		nextLayerSize: next,
 		learningRate:  learningRate,
-		bias:          bias != 0,
-		nextBias:      nextBias,
+	}
+	if bias != 0 {
+		for i := 0; i < next; i++ {
+			 layer.biases = append(layer.biases, bias)
+		}
 	}
 	layer.synapses = layer.init()
 	return layer
@@ -139,54 +140,23 @@ type hiddenDense struct {
 	prevLayerSize, currLayerSize, nextLayerSize int
 	learningRate                                float64
 	corrections, synapses                       [][]float64
-	activated, input                            []float64
-	nextBias, bias                              bool // Indicate do biases on a current layer and a next one exist
+	activated, input, biases                    []float64
 }
 
-func (l *hiddenDense) forward(input [][]float64) (output [][]float64, err error) {
-	// Input lesser than a layer size because bias has no input.
-	if err = areSizesConsistent(len(input), l.currLayerSize, len(l.synapses), true); err != nil {
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
+func (l *hiddenDense) forward(input []float64) (output []float64, err error) {
+	l.input = input
+	l.activated, err = goVectorize.ApplyFunction(l.activate, input)
+	if err != nil {
 		return
 	}
 
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
-	}
-	currLayerSize := l.currLayerSize
-	if l.bias {
-		currLayerSize--
+	output, err = goVectorize.Dot1D2D(input, l.synapses)
+	if err != nil {
+		return
 	}
 
-	var inputSum, actValue float64
-	output = make([][]float64, l.nextLayerSize)
-
-	l.activated = nil
-	l.input = nil
-	for i := 0; i < currLayerSize; i++ {
-		inputSum = 0
-		for _, j := range input[i] {
-			inputSum += j
-		}
-
-		l.input = append(l.input, inputSum)
-		actValue, err = l.activate(inputSum)
-		if err != nil {
-			return
-		}
-
-		l.activated = append(l.activated, actValue)
-	}
-
-	for i := 0; i < nextLayerSize; i++ {
-		for j := 0; j < currLayerSize; j++ {
-			output[i] = append(output[i], l.synapses[j][i]*l.activated[j])
-		}
-		if l.bias {
-			output[i] = append(output[i], l.synapses[currLayerSize][i])
-		}
+	if l.biases != nil {
+		output, err = goVectorize.Add(output, l.biases)
 	}
 	return
 }

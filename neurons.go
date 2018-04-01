@@ -48,43 +48,14 @@ func (l *inputDense) forward(input []float64) (output []float64, err error) {
 }
 
 func (l *inputDense) backward(eRRors []float64) (err error) {
-	// Exclude bias synapse
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
-	}
-	currLayerSize := l.currLayerSize
-	if l.bias {
-		currLayerSize--
+	corrections := goVectorize.OuterProduct(eRRors, l.input)
+	l.corrections, err = goVectorize.EntrywiseSum(l.corrections, corrections)
+	if err != nil {
+		return
 	}
 
-	if err = checkInputSize(len(eRRors), nextLayerSize); err != nil {
-		if err = checkInputSize(len(l.input), currLayerSize); err != nil {
-			lockErr := err.(locatedError)
-			err = lockErr.freeze()
-			return
-		}
-	}
-
-	if l.corrections == nil {
-		l.corrections = make([][]float64, l.currLayerSize)
-	}
-
-	for i := 0; i < nextLayerSize; i++ {
-		for j := 0; j < currLayerSize; j++ {
-			if l.corrections[j] == nil {
-				l.corrections[j] = make([]float64, nextLayerSize)
-			}
-			// Input layer doesn't use activation so to obtain correction we need to
-			// use input as it is.
-			l.corrections[j][i] += eRRors[i] * l.input[j]
-		}
-		if l.bias {
-			if l.corrections[currLayerSize] == nil {
-				l.corrections[currLayerSize] = make([]float64, nextLayerSize)
-			}
-			l.corrections[currLayerSize][i] += eRRors[i]
-		}
+	if l.biases {
+		l.biases, err = goVectorize.Add(l.biases, eRRors)
 	}
 	return
 }

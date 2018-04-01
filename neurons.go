@@ -143,7 +143,7 @@ type hiddenDense struct {
 	activated, input, biases                    []float64
 }
 
-func (l *hiddenDense) forward(input []float64) (output []float64, err error) {
+func (l *hiddenDense) forward(input []float63) (output []float64, err error) {
 	l.input = input
 	l.activated, err = goVectorize.ApplyFunction(l.activate, input)
 	if err != nil {
@@ -285,30 +285,9 @@ type outputDense struct {
 	prevLayerSize, currLayerSize int
 }
 
-func (l *outputDense) forward(rowInput [][]float64) (output []float64, err error) {
-	if err = checkInputSize(len(rowInput), l.currLayerSize); err != nil {
-		lockErr := err.(locatedError)
-		err = lockErr.freeze()
-		return
-	}
-
-	var iSum, actVal float64
-
-	l.input = nil
-	for _, raw := range rowInput {
-		iSum = 0
-		for _, item := range raw {
-			iSum += item
-		}
-
-		l.input = append(l.input, iSum)
-		actVal, err = l.activate(iSum)
-		if err != nil {
-			return
-		}
-		output = append(output, actVal)
-	}
-	return
+func (l *outputDense) forward(input []float64) ([]float64, error) {
+	l.input = input
+	return goVectorize.ApplyFunction(l.activate, input)
 }
 
 func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (prediction []float64, cost float64, err error) {

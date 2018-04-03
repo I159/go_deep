@@ -133,32 +133,14 @@ func (l *hiddenDense) forward(input []float63) (output []float64, err error) {
 }
 
 func (l *hiddenDense) updateCorrections(eRRors []float64) [][]float64 {
-	currLayerSize := l.currLayerSize
-	if l.bias {
-		currLayerSize--
-	}
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
+	corrections := goVectorize.OuterProduct(eRRors, l.input)
+	l.corrections, err = goVectorize.EntrywiseSum(l.corrections, corrections)
+	if err != nil {
+		return
 	}
 
-	// Collect corrections for further forward error propagation
-	if l.corrections == nil {
-		l.corrections = make([][]float64, l.currLayerSize)
-	}
-
-	for i := 0; i < nextLayerSize; i++ {
-		for j := 0; j < currLayerSize; j++ {
-			if l.corrections[j] == nil {
-				l.corrections[j] = make([]float64, l.nextLayerSize)
-			}
-			l.corrections[j][i] += l.activated[j] * eRRors[i]
-		}
-		// Apply bias error signal
-		if l.corrections[currLayerSize] == nil {
-			l.corrections[currLayerSize] = make([]float64, nextLayerSize)
-		}
-		l.corrections[currLayerSize][i] += eRRors[i]
+	if l.biases {
+		l.biases, err = goVectorize.Add(l.biases, eRRors)
 	}
 	return l.corrections
 }

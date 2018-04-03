@@ -3,6 +3,7 @@
 [![Code Climate](https://codeclimate.com/github/I159/go_deep/badges/gpa.svg)](https://codeclimate.com/github/I159/go_deep)
 [![Test Coverage](https://codeclimate.com/github/I159/go_deep/badges/coverage.svg)](https://codeclimate.com/github/I159/go_deep/coverage)
 [![Go Report Card](https://goreportcard.com/badge/github.com/I159/go_deep)](https://goreportcard.com/report/github.com/I159/go_deep)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Motivation
 

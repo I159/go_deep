@@ -54,7 +54,7 @@ func (l *inputDense) backward(eRRors []float64) (err error) {
 		return
 	}
 
-	if l.biases {
+	if l.biases != nil {
 		l.biases, err = goVectorize.Add(l.biases, eRRors)
 	}
 	return
@@ -114,7 +114,7 @@ type hiddenDense struct {
 	activated, input, biases                    []float64
 }
 
-func (l *hiddenDense) forward(input []float63) (output []float64, err error) {
+func (l *hiddenDense) forward(input []float64) (output []float64, err error) {
 	l.input = input
 	l.activated, err = goVectorize.ApplyFunction(l.activate, input)
 	if err != nil {
@@ -145,36 +145,23 @@ func (l *hiddenDense) updateCorrections(eRRors []float64) [][]float64 {
 	return l.corrections
 }
 
+// Propagate backward from hidden to a previous hidden or input layer
+// Single error signal per neuron.
 func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err error) {
-	// Propagate backward from hidden to a previous hidden or input layer
-	// Single error signal per neuron.
 	l.corrections = l.updateCorrections(eRRors)
-
-	nextLayerSize := l.nextLayerSize
-	if l.nextBias {
-		nextLayerSize--
+	transposed , err := goVectorize.Transpose(l.synapses)
+	if err != nil {
+		return
 	}
-	currLayerSize := l.currLayerSize
-	if l.bias {
-		currLayerSize--
+	errSums , err:= goVectorize.Dot1D2D(eRRors, transposed)
+	if err != nil {
+		return
 	}
-
-	// Bias is not connected with previous layer so exclude the last synapse
-	// From both previous layer errors vector and a current one.
-	var eRRSum, actDer float64
-	for i := 0; i < currLayerSize; i++ {
-
-		actDer, err = l.actDerivative(l.input[i])
-		if err != nil {
-			return
-		}
-
-		eRRSum = 0
-		for j := 0; j < nextLayerSize; j++ {
-			eRRSum += l.synapses[i][j] * eRRors[j]
-		}
-		prevLayerErrors = append(prevLayerErrors, actDer*eRRSum)
+	actDerivatives , err:= goVectorize.ApplyFunction(l.actDerivative, l.input)
+	if err != nil {
+		return
 	}
+	prevLayerErrors, err = goVectorize.MulArrays(actDerivatives, errSums)
 	return
 }
 

@@ -88,9 +88,9 @@ func (l *inputDense) applyCorrections(batchSize float64) (err error) {
 func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) inputLayer {
 	layer := &inputDense{
 		synapseInitializer: &denseSynapses{
-			prev:     1,
-			curr:     curr,
-			next:     next,
+			prev: 1,
+			curr: curr,
+			next: next,
 		},
 		currLayerSize: curr,
 		nextLayerSize: next,
@@ -98,7 +98,7 @@ func newInputDense(curr, next int, learningRate, bias float64, nextBias bool) in
 	}
 	if bias != 0 {
 		for i := 0; i < next; i++ {
-			 layer.biases = append(layer.biases, bias)
+			layer.biases = append(layer.biases, bias)
 		}
 	}
 	layer.synapses = layer.init()
@@ -132,36 +132,44 @@ func (l *hiddenDense) forward(input []float64) (output []float64, err error) {
 	return
 }
 
-func (l *hiddenDense) updateCorrections(eRRors []float64) [][]float64 {
+func (l *hiddenDense) updateCorrections(eRRors []float64) ([][]float64, error) {
+	var err error
 	corrections := goVectorize.OuterProduct(eRRors, l.input)
 	l.corrections, err = goVectorize.EntrywiseSum(l.corrections, corrections)
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	if l.biases {
+	if l.biases != nil {
 		l.biases, err = goVectorize.Add(l.biases, eRRors)
 	}
-	return l.corrections
+	return l.corrections, err
 }
 
 // Propagate backward from hidden to a previous hidden or input layer
 // Single error signal per neuron.
 func (l *hiddenDense) backward(eRRors []float64) (prevLayerErrors []float64, err error) {
-	l.corrections = l.updateCorrections(eRRors)
-	transposed , err := goVectorize.Transpose(l.synapses)
+	l.corrections, err = l.updateCorrections(eRRors)
 	if err != nil {
 		return
 	}
-	errSums , err:= goVectorize.Dot1D2D(eRRors, transposed)
+
+	transposed, err := goVectorize.Transpose(l.synapses, l.nextLayerSize)
 	if err != nil {
 		return
 	}
-	actDerivatives , err:= goVectorize.ApplyFunction(l.actDerivative, l.input)
+
+	errSums, err := goVectorize.Dot1D2D(eRRors, transposed)
 	if err != nil {
 		return
 	}
-	prevLayerErrors, err = goVectorize.MulArrays(actDerivatives, errSums)
+
+	actDerivatives, err := goVectorize.ApplyFunction(l.actDerivative, l.input)
+	if err != nil {
+		return
+	}
+
+	prevLayerErrors, err = goVectorize.MultiplyArrays(actDerivatives, errSums)
 	return
 }
 
@@ -230,7 +238,7 @@ func (l *outputDense) forward(input []float64) ([]float64, error) {
 	return goVectorize.ApplyFunction(l.activate, input)
 }
 
-func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (prediction []float64, cost float64, err error) {
+func (l *outputDense) forwardMeasure(rowInput []float64, labels []float64) (prediction []float64, cost float64, err error) {
 	prediction, err = l.forward(rowInput)
 	if err != nil {
 		return
@@ -240,18 +248,17 @@ func (l *outputDense) forwardMeasure(rowInput [][]float64, labels []float64) (pr
 }
 
 func (l *outputDense) backward(prediction []float64, labels []float64) (eRRors []float64, err error) {
-	var eRR, actDer float64
-
-	for i, pred := range prediction {
-		// Delta rule
-		actDer, err = l.actDerivative(l.input[i])
-		if err != nil {
-			return
-		}
-		eRR = l.costDerivative(pred, labels[i]) * actDer
-		eRRors = append(eRRors, eRR)
+	actDerivatives, err := goVectorize.ApplyFunction(l.actDerivative, l.input)
+	if err != nil {
+		return
 	}
-	return
+
+	eRRors, err = goVectorize.Apply2DFunction(prediction, labels)
+	if err != nil {
+		return
+	}
+
+	return goVectorize.MultiplyArrays(eRRors, actDerivatives)
 }
 
 func newOutput(prev, curr int, activation activation, cost cost) outputLayer {
